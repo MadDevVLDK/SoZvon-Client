@@ -60,7 +60,7 @@ namespace SoZvon.UI.My_Controls {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/SoZvon;component/ui/my_controls/my_textbox.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/SoZvon;V1.0.0.0;component/ui/my_controls/my_textbox.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\..\UI\My_Controls\My_TextBox.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

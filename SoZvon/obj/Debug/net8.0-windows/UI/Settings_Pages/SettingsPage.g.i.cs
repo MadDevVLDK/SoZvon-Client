@@ -109,7 +109,7 @@ namespace SoZvon.UI.Room_Pages {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/SoZvon;component/ui/settings_pages/settingspage.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/SoZvon;V1.0.0.0;component/ui/settings_pages/settingspage.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\..\UI\Settings_Pages\SettingsPage.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

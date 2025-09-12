@@ -118,7 +118,7 @@ namespace SoZvon.UI {
                 return;
             }
             _contentLoaded = true;
-            System.Uri resourceLocater = new System.Uri("/SoZvon;component/ui/mainwindow.xaml", System.UriKind.Relative);
+            System.Uri resourceLocater = new System.Uri("/SoZvon;V1.0.0.0;component/ui/mainwindow.xaml", System.UriKind.Relative);
             
             #line 1 "..\..\..\..\UI\MainWindow.xaml"
             System.Windows.Application.LoadComponent(this, resourceLocater);

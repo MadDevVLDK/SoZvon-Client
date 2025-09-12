@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\SoZvon\\SoZvon\\SoZvon.csproj": {}
+    "C:\\GitProjects\\SoZvon\\SoZvon\\SoZvon.csproj": {}
   },
   "projects": {
-    "D:\\SoZvon\\SoZvon\\SoZvon.csproj": {
+    "C:\\GitProjects\\SoZvon\\SoZvon\\SoZvon.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\SoZvon\\SoZvon\\SoZvon.csproj",
+        "projectUniqueName": "C:\\GitProjects\\SoZvon\\SoZvon\\SoZvon.csproj",
         "projectName": "SoZvon",
-        "projectPath": "D:\\SoZvon\\SoZvon\\SoZvon.csproj",
+        "projectPath": "C:\\GitProjects\\SoZvon\\SoZvon\\SoZvon.csproj",
         "packagesPath": "C:\\Users\\kiril\\.nuget\\packages\\",
-        "outputPath": "D:\\SoZvon\\SoZvon\\obj\\",
+        "outputPath": "C:\\GitProjects\\SoZvon\\SoZvon\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -26,7 +26,6 @@
         ],
         "sources": {
           "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
-          "C:\\Program Files\\dotnet\\library-packs": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {

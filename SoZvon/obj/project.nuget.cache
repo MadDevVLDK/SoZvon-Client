@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "ypBHH7g47q8=",
+  "dgSpecHash": "Dx+HgtmbOIU=",
   "success": true,
-  "projectFilePath": "D:\\SoZvon\\SoZvon\\SoZvon.csproj",
+  "projectFilePath": "C:\\GitProjects\\SoZvon\\SoZvon\\SoZvon.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\kiril\\.nuget\\packages\\microsoft.netcore.platforms\\3.1.0\\microsoft.netcore.platforms.3.1.0.nupkg.sha512",
     "C:\\Users\\kiril\\.nuget\\packages\\microsoft.win32.registry\\4.7.0\\microsoft.win32.registry.4.7.0.nupkg.sha512",
@@ -16,15 +16,5 @@
     "C:\\Users\\kiril\\.nuget\\packages\\system.security.accesscontrol\\4.7.0\\system.security.accesscontrol.4.7.0.nupkg.sha512",
     "C:\\Users\\kiril\\.nuget\\packages\\system.security.principal.windows\\4.7.0\\system.security.principal.windows.4.7.0.nupkg.sha512"
   ],
-  "logs": [
-    {
-      "code": "NU1900",
-      "level": "Warning",
-      "message": "Произошла ошибка при получении данных уязвимости пакета: Не удалось загрузить индекс службы для источника https://api.nuget.org/v3/index.json.",
-      "projectPath": "D:\\SoZvon\\SoZvon\\SoZvon.csproj",
-      "warningLevel": 1,
-      "filePath": "D:\\SoZvon\\SoZvon\\SoZvon.csproj",
-      "targetGraphs": []
-    }
-  ]
+  "logs": []
 }

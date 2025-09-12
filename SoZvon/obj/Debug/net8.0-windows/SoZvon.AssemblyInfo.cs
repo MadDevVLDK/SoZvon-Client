@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SoZvon")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+9e041dfd16a5d126bb5f0d989da38e96ff5aeca0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5035fc7de0e8d018b31ae3081238014d6df7e25d")]
 [assembly: System.Reflection.AssemblyProductAttribute("SoZvon")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SoZvon")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
