@@ -603,7 +603,7 @@ namespace SoZvon.UI
             {
                 login_page.TextBox_Login.Text = login;
                 login_page.TextBox_Password.Text = password;
-            }//
+            }
 
             if (ip_valid)
             {
