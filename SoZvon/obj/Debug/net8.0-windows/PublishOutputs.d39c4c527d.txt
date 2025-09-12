@@ -1,5 +1,0 @@
-C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\publish\SoZvon.exe
-C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\publish\SoZvon.dll
-C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\publish\SoZvon.deps.json
-C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\publish\SoZvon.runtimeconfig.json
-C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\publish\SoZvon.pdb

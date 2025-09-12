@@ -1,7 +1,0 @@
-C:\Users\kiril\Desktop\SoZvon_1.20\SoZvon.pdb
-C:\Users\kiril\Desktop\SoZvon_1.20\D3DCompiler_47_cor3.dll
-C:\Users\kiril\Desktop\SoZvon_1.20\PenImc_cor3.dll
-C:\Users\kiril\Desktop\SoZvon_1.20\PresentationNative_cor3.dll
-C:\Users\kiril\Desktop\SoZvon_1.20\vcruntime140_cor3.dll
-C:\Users\kiril\Desktop\SoZvon_1.20\wpfgfx_cor3.dll
-C:\Users\kiril\Desktop\SoZvon_1.20\SoZvon.exe

@@ -1,5 +1,0 @@
-C:\Users\kiril\Desktop\SoZvon_1.06\SoZvon.exe
-C:\Users\kiril\Desktop\SoZvon_1.06\SoZvon.dll
-C:\Users\kiril\Desktop\SoZvon_1.06\SoZvon.deps.json
-C:\Users\kiril\Desktop\SoZvon_1.06\SoZvon.runtimeconfig.json
-C:\Users\kiril\Desktop\SoZvon_1.06\SoZvon.pdb
