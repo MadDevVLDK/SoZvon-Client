@@ -1,0 +1,5 @@
+C:\Users\kiril\Desktop\gg\SoZvon.exe
+C:\Users\kiril\Desktop\gg\SoZvon.dll
+C:\Users\kiril\Desktop\gg\SoZvon.deps.json
+C:\Users\kiril\Desktop\gg\SoZvon.runtimeconfig.json
+C:\Users\kiril\Desktop\gg\SoZvon.pdb

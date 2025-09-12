@@ -1,0 +1,394 @@
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\App.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.cache
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.lref
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.exe
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.deps.json
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.runtimeconfig.json
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.dll
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.pdb
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.g.resources
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.GeneratedMSBuildEditorConfig.editorconfig
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfoInputs.cache
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfo.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.CoreCompileInputs.cache
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.dll
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\refint\SoZvon.dll
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.pdb
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.genruntimeconfig.cache
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\ref\SoZvon.dll
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\App.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.cache
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.lref
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.dll
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\refint\SoZvon.dll
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.pdb
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.exe
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.deps.json
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.runtimeconfig.json
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.dll
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.pdb
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.g.resources
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.GeneratedMSBuildEditorConfig.editorconfig
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfoInputs.cache
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfo.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.CoreCompileInputs.cache
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.genruntimeconfig.cache
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\ref\SoZvon.dll
+E:\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.exe
+E:\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.deps.json
+E:\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.runtimeconfig.json
+E:\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.dll
+E:\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.pdb
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\MainWindow.g.cs
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\App.g.cs
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.cache
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.lref
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\MainWindow.baml
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.g.resources
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.GeneratedMSBuildEditorConfig.editorconfig
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfoInputs.cache
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfo.cs
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.CoreCompileInputs.cache
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.dll
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\refint\SoZvon.dll
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.pdb
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.genruntimeconfig.cache
+E:\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\ref\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\bin\Debug\net8.0-windows\SoZvon.exe
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\bin\Debug\net8.0-windows\SoZvon.deps.json
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\bin\Debug\net8.0-windows\SoZvon.runtimeconfig.json
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\bin\Debug\net8.0-windows\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\bin\Debug\net8.0-windows\SoZvon.pdb
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\MainWindow.g.cs
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\App.g.cs
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.cache
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.lref
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\MainWindow.baml
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon.g.resources
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfoInputs.cache
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfo.cs
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.CoreCompileInputs.cache
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\refint\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon.pdb
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\SoZvon.genruntimeconfig.cache
+C:\Users\kiril\Desktop\SoZvon_с сервером\SoZvon\obj\Debug\net8.0-windows\ref\SoZvon.dll
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.exe
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.deps.json
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.runtimeconfig.json
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.dll
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.pdb
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\MainWindow.g.cs
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\App.g.cs
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.cache
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.lref
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\MainWindow.baml
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.g.resources
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.GeneratedMSBuildEditorConfig.editorconfig
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfoInputs.cache
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfo.cs
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.CoreCompileInputs.cache
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.dll
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\refint\SoZvon.dll
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.pdb
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.genruntimeconfig.cache
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\ref\SoZvon.dll
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\LogInPage.g.cs
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\LogInPage.baml
+D:\Новая папка\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.exe
+D:\Новая папка\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.deps.json
+D:\Новая папка\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.runtimeconfig.json
+D:\Новая папка\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.dll
+D:\Новая папка\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.pdb
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\LogInPage.g.cs
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\MainWindow.g.cs
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\App.g.cs
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.cache
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.lref
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\LogInPage.baml
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\MainWindow.baml
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.g.resources
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.GeneratedMSBuildEditorConfig.editorconfig
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfoInputs.cache
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfo.cs
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.CoreCompileInputs.cache
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.dll
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\refint\SoZvon.dll
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.pdb
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.genruntimeconfig.cache
+D:\Новая папка\SoZvon\SoZvon\obj\Debug\net8.0-windows\ref\SoZvon.dll
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\StartPage.g.cs
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\StartPage.baml
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\RegisterPage.g.cs
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\RegisterPage.baml
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\Telegram.Bot.dll
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.AssemblyReference.cache
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.Up2Date
+G:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.sourcelink.json
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\Mono.Nat.dll
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.dll
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Asio.dll
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Core.dll
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Midi.dll
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Wasapi.dll
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinForms.dll
+G:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinMM.dll
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.dll
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Asio.dll
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Core.dll
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Midi.dll
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Wasapi.dll
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinForms.dll
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinMM.dll
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.AssemblyReference.cache
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.sourcelink.json
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.Up2Date
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.AssemblyReference.cache
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\LogInPage.g.cs
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\MainWindow.g.cs
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\RegisterPage.g.cs
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\StartPage.g.cs
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\App.g.cs
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.cache
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.lref
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.dll
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\refint\SoZvon.dll
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.pdb
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.exe
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.deps.json
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.runtimeconfig.json
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.dll
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.pdb
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\Mono.Nat.dll
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.dll
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Asio.dll
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Core.dll
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Midi.dll
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Wasapi.dll
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinForms.dll
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinMM.dll
+D:\SoZvon\SoZvon\SoZvon\bin\Debug\net8.0-windows\Telegram.Bot.dll
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\LogInPage.baml
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\MainWindow.baml
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\RegisterPage.baml
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\StartPage.baml
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.g.resources
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.GeneratedMSBuildEditorConfig.editorconfig
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfoInputs.cache
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfo.cs
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.CoreCompileInputs.cache
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.sourcelink.json
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.Up2Date
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.genruntimeconfig.cache
+D:\SoZvon\SoZvon\SoZvon\obj\Debug\net8.0-windows\ref\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.exe
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.deps.json
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.runtimeconfig.json
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\SoZvon.pdb
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Asio.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Core.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Midi.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Wasapi.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinForms.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinMM.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.AssemblyReference.cache
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\App.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.cache
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.lref
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.g.resources
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfoInputs.cache
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfo.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.CoreCompileInputs.cache
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.sourcelink.json
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.Up2Date
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\refint\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.pdb
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.genruntimeconfig.cache
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\ref\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\LogInPage.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\LogInPage.baml
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\MainWindow.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\RegisterPage.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\MainWindow.baml
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\RegisterPage.baml
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPanelPage.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPanelPage.baml
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPage.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPage.baml
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\GeneratedInternalTypeHelper.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_Content.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\01.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\02.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\03.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\04.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\05.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\06.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\07.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\08.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\09.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\10.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\11.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\12.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\13.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\14.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\My_Controls\My_TextBox.baml
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\My_Controls\My_TextBox.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\15.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\16.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\17.png
+C:\Users\kiril\Desktop\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\18.png
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\My_Controls\My_TextBox.baml
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\MainWindow.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\My_Controls\My_TextBox.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\LogInPage.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\RegisterPage.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPage.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPanelPage.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_Content.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\GeneratedInternalTypeHelper.g.cs
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\15.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\16.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\17.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\18.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\01.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\02.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\03.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\04.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\05.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\06.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\07.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\08.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\09.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\10.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\11.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\12.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\13.png
+D:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\14.png
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\MainWindow.baml
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\LogInPage.baml
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\RegisterPage.baml
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPage.baml
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPanelPage.baml
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\15.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\16.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\17.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\18.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\01.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\02.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\03.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\04.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\05.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\06.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\07.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\08.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\09.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\10.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\11.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\12.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\13.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\images\emoticons\14.png
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.dll
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Asio.dll
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Core.dll
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Midi.dll
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.Wasapi.dll
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinForms.dll
+E:\SoZvon\SoZvon\bin\Debug\net8.0-windows\NAudio.WinMM.dll
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.AssemblyReference.cache
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\My_Controls\My_TextBox.baml
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\MainWindow.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\My_Controls\My_TextBox.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\LogInPage.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\RegisterPage.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPage.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPanelPage.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon_Content.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\GeneratedInternalTypeHelper.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\MainWindow.baml
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\LogInPage.baml
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Pages\RegisterPage.baml
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPage.baml
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPanelPage.baml
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.sourcelink.json
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.Up2Date
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\SettingsPage.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\TitleSettingsPage.g.cs
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\SettingsPage.baml
+C:\Users\kiril\Desktop\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\TitleSettingsPage.baml
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\15.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\16.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\17.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\18.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\01.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\02.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\03.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\04.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\05.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\06.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\07.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\08.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\09.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\10.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\11.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\12.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\13.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\images\emoticons\14.png
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.exe
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.deps.json
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.runtimeconfig.json
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\SoZvon.pdb
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\NAudio.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\NAudio.Asio.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\NAudio.Core.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\NAudio.Midi.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\NAudio.Wasapi.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\NAudio.WinForms.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\bin\Debug\net8.0-windows\NAudio.WinMM.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.AssemblyReference.cache
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\My_Controls\My_TextBox.baml
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\SettingsPage.baml
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\MainWindow.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\My_Controls\My_TextBox.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Pages\LogInPage.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Pages\RegisterPage.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPage.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPanelPage.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\SettingsPage.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\TitleSettingsPage.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\App.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon_Content.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\GeneratedInternalTypeHelper.g.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.cache
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon_MarkupCompile.lref
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\MainWindow.baml
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Pages\LogInPage.baml
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Pages\RegisterPage.baml
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPage.baml
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Room_Pages\RoomPanelPage.baml
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\TitleSettingsPage.baml
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.g.resources
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfoInputs.cache
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.AssemblyInfo.cs
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.CoreCompileInputs.cache
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.sourcelink.json
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.csproj.Up2Date
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\refint\SoZvon.dll
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.pdb
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\SoZvon.genruntimeconfig.cache
+C:\Users\kiril\Desktop\SoZvon — копия\SoZvon\obj\Debug\net8.0-windows\ref\SoZvon.dll
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\SettingsPage.baml
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\SettingsPage.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\TitleSettingsPage.g.cs
+D:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\TitleSettingsPage.baml
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\SettingsPage.baml
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\SettingsPage.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\TitleSettingsPage.g.cs
+E:\SoZvon\SoZvon\obj\Debug\net8.0-windows\UI\Settings_Pages\TitleSettingsPage.baml
