@@ -501,25 +501,25 @@ namespace SoZvon.UI
         readonly CancellationTokenSource cts = new();
         readonly Channel<Action> form_current_actions_channel = Channel.CreateBounded<Action>(new BoundedChannelOptions(2000) { FullMode = BoundedChannelFullMode.Wait });
 
-        public StackPanel errorStackPanel_ref { get; private set; }
+        public StackPanel errorStackPanel_ref { get; private set; } = null!;
 
-        public Frame mainFrame_ref { get; private set; }
-        public Frame rightPanel_ref { get; private set; }
-        public Frame leftPanel_ref { get; private set; }
+        public Frame mainFrame_ref { get; private set; } = null!;
+        public Frame rightPanel_ref { get; private set; } = null!;
+        public Frame leftPanel_ref { get; private set; } = null!;
 
-        public Pages.LogInPage login_page { get; private set; }
-        public Pages.RegisterPage register_page { get; private set; }
-        public Room_Pages.RoomPanelPage room_panel_page { get; private set; }
-        public Room_Pages.RoomPage room_page { get; private set; }
-        public Room_Pages.SettingsPage settings_page { get; private set; }
-        public Room_Pages.TitleSettingsPage titleSettings_page { get; private set; }
+        public Pages.LogInPage login_page { get; private set; } = null!;
+        public Pages.RegisterPage register_page { get; private set; } = null!;
+        public Room_Pages.RoomPanelPage room_panel_page { get; private set; } = null!;
+        public Room_Pages.RoomPage room_page { get; private set; } = null!;
+        public Room_Pages.SettingsPage settings_page { get; private set; } = null!;
+        public Room_Pages.TitleSettingsPage titleSettings_page { get; private set; } = null!;
 
-        My_Buttons my_Buttons;
-        My_Actions my_Actions;
-        NotifyMsgManager notifyMsgManager;
-        ReesterWindows reesterWindows;
-        My_Timer buttonTimer;
-        FilesManager filesManager;
+        My_Buttons my_Buttons = null!;
+        My_Actions my_Actions = null!;
+        NotifyMsgManager notifyMsgManager = null!;
+        ReesterWindows reesterWindows = null!;
+        My_Timer buttonTimer = null!;
+        FilesManager filesManager = null!;
 
         public MainWindow(Main_Thread.IUser user_)
         {
@@ -535,6 +535,7 @@ namespace SoZvon.UI
             _ = UserUI_Channel_Thread(cts.Token);
 
             InitializeComponent();
+
             InitializeSubClasses();
         }
 
