@@ -13,6 +13,8 @@ using Color = System.Windows.Media.Color;
 using Colors = System.Windows.Media.Colors;
 using SolidColorBrush = System.Windows.Media.SolidColorBrush;
 
+//гит ноут
+
 namespace SoZvon.UI
 {
     public partial class MainWindow
