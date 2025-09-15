@@ -1,7 +1,6 @@
 ﻿using SoZvon.UI.SubClasses;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Pipes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -466,7 +465,7 @@ namespace SoZvon.SubClasses
         }
         void CheckFileInfo()
         {
-            if (fileInfo.Size == 0)
+            if (fileInfo.Size == -1)
             {
                 GetInfoFile();
             }
@@ -482,8 +481,6 @@ namespace SoZvon.SubClasses
             if (FileInfoPanel.FindElementByTag<TextBlock>("FileSizeText") is not TextBlock FileSizeText) 
                 return;
 
-            //HasFileInfo = true;
-            
             FileSizeText.Text = FormatFileSize(size);
         }
         internal void UpdateProgress(string status, Color color)
@@ -701,7 +698,7 @@ namespace SoZvon.SubClasses
         }
 
         // Загрузка и отображение изображения
-        internal async void SetImage(int maxRetries = 3)
+        internal async void SetImage(int maxRetries = 5)
         {
             for (int attempt = 1; attempt <= maxRetries; attempt++)
             {

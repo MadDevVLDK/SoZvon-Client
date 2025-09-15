@@ -109,7 +109,7 @@
         GetMicrophonesInfo,
         OnMicrophonesInfo,
         SelectMicrophoneByName,
-        ReloadConnectionServ
+        ReloadConnectionServer
     }
     record Action_IUser(ActionFromIUser Action, Dictionary<string, object> Params);
     record Action_Interfaces(ActionToIUser Action, Dictionary<string, object> Params);

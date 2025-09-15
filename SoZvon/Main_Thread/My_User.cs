@@ -390,6 +390,14 @@ namespace SoZvon.Main_Thread
                         action = () => OnIUserAction(InterfaceToSend.IVoiceManager, ActionFromIUser.OnSelectMicrophoneByName, new() { ["microphone"] = microphone });
                         break;
                     }
+                case ActionToIUser.ReloadConnectionServer:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.ReloadConnectionServer, []);
+                        break;
+                    }
                 default:
                     throw new My_Exception("no valid ActionFromIUser");
             }

@@ -6,9 +6,8 @@ namespace SoZvon.SubClasses
     public class FileLocker(string filePath) : IDisposable
     {
         readonly object fileStream_lock = new();
-
-        FileStream? _fileStream;
-        readonly string _filePath = filePath;
+        FileStream? fileStream;
+        readonly string filePath = filePath;
 
         public static FileLocker LockFile(string file_name)
         {
@@ -29,12 +28,12 @@ namespace SoZvon.SubClasses
         {
             try
             {
-                _fileStream = new FileStream(_filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read); 
+                fileStream = new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read); 
                 // FileShare.None - запрещает любое совместное использование
             }
             catch (IOException ex)
             {
-                throw new IOException($"Cannot lock file {_filePath}. It may be in use by another process.", ex);
+                throw new IOException($"Cannot lock file {filePath}. It may be in use by another process.", ex);
             }
         }
         
@@ -42,15 +41,15 @@ namespace SoZvon.SubClasses
         {
             lock (fileStream_lock)
             {
-                return _fileStream;
+                return fileStream;
             }
         }
         public void Dispose()
         {
             lock (fileStream_lock)
             {
-                _fileStream?.Dispose();
-                _fileStream = null;
+                fileStream?.Dispose();
+                fileStream = null;
             }
         }
     }
@@ -80,12 +79,10 @@ namespace SoZvon.SubClasses
 
         readonly FileLocker Locker = new(path);
 
-
         public My_FileInfo(string name, string extension, string path, FileType type, long size, bool isFromHistoryMsg = false) : this(name, extension, path, type, isFromHistoryMsg)
         {
             Size = size;
         }
-
 
         // Метод для получения информации о файле по пути
         public static (string name, string extension, FileType fileType, long size) GetFileInfoData(string filePath)
@@ -193,7 +190,7 @@ namespace SoZvon.SubClasses
             string name = SysPath.GetFileNameWithoutExtension(filePath);
             string extension = SysPath.GetExtension(filePath).ToLowerInvariant();
             
-            long size = !isFromHistoryMsg ? new FileInfo(filePath).Length : 0;
+            long size = !isFromHistoryMsg ? new FileInfo(filePath).Length : -1;
 
             if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(extension))
                 throw new Exception("name is empty and extension is empty");

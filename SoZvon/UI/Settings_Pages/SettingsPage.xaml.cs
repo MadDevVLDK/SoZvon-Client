@@ -963,9 +963,9 @@ namespace SoZvon.UI.Room_Pages
                 mainWindow.Make_ErrorMessage("Settings", "ChangeComboboxValues is false");
         }
         public void SelectMicrophoneByName(string name) => mainWindow.SelectMicrophoneByName(name);
-
         public void ReloadConnectionServ() => mainWindow.ReloadConnectionServ();
         public void CloseApplication() => mainWindow.CloseApplication();
+
         public bool IsWindowFocused() => mainWindow.IsWindowFocused();
 
         void SaveButton_Click(object sender, RoutedEventArgs e)

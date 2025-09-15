@@ -737,7 +737,7 @@ namespace SoZvon.UI
         public void SelectMicrophoneByName(string name) => User.OnInterfacesAction(ActionToIUser.SelectMicrophoneByName, new() {
             ["microphone"] = name
         });
-        public void ReloadConnectionServ() => User.OnInterfacesAction(ActionToIUser.ReloadConnectionServ, []);
+        public void ReloadConnectionServ() => User.OnInterfacesAction(ActionToIUser.ReloadConnectionServer, []);
         public void CloseApplication() => Application.Current.Shutdown();
 
         public void Change_Log_Text(string text, Color color)
