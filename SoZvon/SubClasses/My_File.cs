@@ -1,6 +1,7 @@
 ﻿using SoZvon.UI.SubClasses;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Pipes;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -699,54 +700,44 @@ namespace SoZvon.SubClasses
             return this;
         }
 
-        // Получаем привьюшку картинки
-        public async Task<BitmapImage> GetOptimizedImageAsync(FileStream fileStream)
-        {
-            if (FileExists)
-                throw new Exception("пустота в fileInfo.Path");
-
-            string fullPath = fileInfo.Path;
-
-            return await Task.Run(() =>
-            {
-                var bitmap = new BitmapImage();
-                
-                bitmap.BeginInit();
-                bitmap.StreamSource = fileStream;
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                if (IsLargeImage()) 
-                    bitmap.DecodePixelWidth = 800;
-                bitmap.EndInit();
-                
-                bitmap.Freeze();
-                return bitmap;
-            });
-        }
-        bool IsLargeImage() => fileInfo.Size > 1_000_000; // >1MB
-
         // Загрузка и отображение изображения
-        internal void SetImage()
+        internal async void SetImage(int maxRetries = 3)
         {
-            try
+            for (int attempt = 1; attempt <= maxRetries; attempt++)
             {
-                var bitmap = new BitmapImage();
-                bitmap.BeginInit();
+                try
+                {
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
 
-                if (fileInfo.GetStream() is FileStream stream)
-                    bitmap.StreamSource = stream;
-                else
-                    bitmap.UriSource = new Uri(fileInfo.Path);
+                    if (fileInfo.GetStream() is FileStream stream)
+                        bitmap.StreamSource = stream;
+                    else
+                        bitmap.UriSource = new Uri(fileInfo.Path);
 
-                bitmap.CacheOption = BitmapCacheOption.OnLoad;
-                bitmap.EndInit();
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.EndInit();
+                    bitmap.Freeze();
 
-                DisplayImage.Source = bitmap;
-                DisplayImage.Visibility = Visibility.Visible;
+                    DisplayImage.Source = bitmap;
+                    DisplayImage.Visibility = Visibility.Visible;
+
+                    return;
+                }
+                catch (IOException) when (attempt < maxRetries)
+                {
+                    // Ждем перед повторной попыткой
+                    await Task.Delay(100 * attempt);
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    filesManager.OnError("File_Error", $"Не удалось открыть изображение. {ex.Message}");
+                    return;
+                }
             }
-            catch (Exception ex)
-            {
-                filesManager.OnError("File_Error", $"Не удалось скопировать изображение. {ex.Message}");
-            }
+
+            filesManager.OnError("File_Error", "Не удалось открыть изображение после нескольких попыток");
         }
 
         // Копирование изображения в буфер (а не только пути)

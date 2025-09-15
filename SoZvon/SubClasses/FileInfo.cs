@@ -29,12 +29,8 @@ namespace SoZvon.SubClasses
         {
             try
             {
-                // Открываем файл с эксклюзивным доступом (чтение + блокировка)
-                _fileStream = new FileStream(
-                    _filePath,
-                    FileMode.OpenOrCreate,
-                    FileAccess.ReadWrite,
-                    FileShare.Read); // FileShare.None - запрещает любое совместное использование
+                _fileStream = new FileStream(_filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read); 
+                // FileShare.None - запрещает любое совместное использование
             }
             catch (IOException ex)
             {

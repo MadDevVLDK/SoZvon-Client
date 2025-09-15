@@ -83,8 +83,7 @@ namespace SoZvon.ServerAPIManager
                         {
                             string id = await EasyFileDownloadAsync(filename, saveFolder);
 
-                            User.OnInterfacesAction(ActionToIUser.SetOperationId, new()
-                            {
+                            User.OnInterfacesAction(ActionToIUser.SetOperationId, new() {
                                 ["fileName"] = filename,
                                 ["id"] = id
                             });
@@ -100,8 +99,7 @@ namespace SoZvon.ServerAPIManager
                         {
                             string id = await EasyFileUploadAsync(filename);
 
-                            User.OnInterfacesAction(ActionToIUser.SetOperationId, new()
-                            {
+                            User.OnInterfacesAction(ActionToIUser.SetOperationId, new() {
                                 ["fileName"] = filename,
                                 ["id"] = id
                             });
