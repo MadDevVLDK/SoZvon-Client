@@ -38,9 +38,15 @@ push:
 	git push
 
 fastpush: 
+ifeq ($(text),)
 	git add .
 	git commit -m "daily commit"
 	git push
+else
+	git add .
+	git commit -m "$(text)"
+	git push
+endif
 
 pull: 
 	git pull
