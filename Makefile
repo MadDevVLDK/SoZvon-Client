@@ -39,9 +39,8 @@ push:
 
 fastpush: 
 	git add .
-	git commit -m DEFAULT_MSG
+	git commit -m "daily commit"
 	git push
-
 
 pull: 
 	git pull
