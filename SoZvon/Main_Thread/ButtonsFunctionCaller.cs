@@ -225,10 +225,7 @@ namespace SoZvon.Main_Thread
             if (!IsRoomNameNull(out var _))
                 return;
 
-            var rooms = roomManager.GetRooms();
-
             OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnRoomNameButton, new() {
-                ["rooms"] = rooms,
                 ["active_room_button"] = active_room_button,
                 ["room_name_button_pressed"] = room_name_button_pressed
             });

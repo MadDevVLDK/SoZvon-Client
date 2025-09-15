@@ -5,6 +5,8 @@ namespace SoZvon.SubClasses
 {
     public class FileLocker(string filePath) : IDisposable
     {
+        readonly object fileStream_lock = new();
+
         FileStream? _fileStream;
         readonly string _filePath = filePath;
 
@@ -12,11 +14,18 @@ namespace SoZvon.SubClasses
         {
             var fileLocker = new FileLocker(file_name);
 
-            fileLocker.LockFile();
+            fileLocker.FastLockFile();
 
             return fileLocker;
         }
-        public void LockFile()
+        public void FastLockFile()
+        {
+            lock (fileStream_lock)
+            {
+                LockFile();
+            }
+        }
+        void LockFile()
         {
             try
             {
@@ -32,11 +41,21 @@ namespace SoZvon.SubClasses
                 throw new IOException($"Cannot lock file {_filePath}. It may be in use by another process.", ex);
             }
         }
-        public FileStream? GetStream() => _fileStream;
+        
+        public FileStream? GetStream()
+        {
+            lock (fileStream_lock)
+            {
+                return _fileStream;
+            }
+        }
         public void Dispose()
         {
-            _fileStream?.Dispose();
-            _fileStream = null;
+            lock (fileStream_lock)
+            {
+                _fileStream?.Dispose();
+                _fileStream = null;
+            }
         }
     }
 
@@ -196,7 +215,7 @@ namespace SoZvon.SubClasses
         }
 
         // Блокировка файла, если он встал в очередь на отправку и соответственно его разблокировка
-        public void LockFile() => Locker.LockFile();
+        public void LockFile() => Locker.FastLockFile();
         public void ReleaseFileLock() => Locker.Dispose();
         public FileStream? GetStream() => Locker.GetStream();
 

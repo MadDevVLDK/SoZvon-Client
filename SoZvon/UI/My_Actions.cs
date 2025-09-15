@@ -446,7 +446,8 @@ namespace SoZvon.UI
                     Foreground = new SolidColorBrush(Color.FromRgb(93, 93, 93)),
                     TextAlignment = TextAlignment.Left,
                     Margin = new Thickness(10, 0, 20, 0),
-                    Background = new SolidColorBrush(Colors.Transparent)
+                    Background = new SolidColorBrush(Colors.Transparent),
+                    Tag = "Text"
                 });
                 
                 new_grid.Children.Add(stackpanel);

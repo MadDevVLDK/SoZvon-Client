@@ -158,7 +158,7 @@ namespace SoZvon.UI
         public bool SetOperationID(string fileName, string id)
         {
             if (!files.TryGetValue(fileName, out My_FileParent? file))
-                return false;
+                return false; //throw new My_Exception("SetOperationID is false");
 
             file.SetOperationID(id);
             return true;
@@ -169,28 +169,28 @@ namespace SoZvon.UI
         public void OnProgressHandler(string fileName, int percent, long fileSize)
         {
             if (!TryGetFile(fileName, out var file))
-                throw new My_Exception("TryGetFile is false");
+                return;
 
             file.ExecuteProgressOperationHandler(percent, fileSize);
         }
         public void OnFileInfoHandler(string fileName, long fileSize)
         {
             if (!TryGetFile(fileName, out var file))
-                throw new My_Exception("TryGetFile is false");
+                return;
 
             file.ExecuteFileInfoHandler(fileSize);
         }
         public void OnErrorHandler(string fileName, string text)
         {
             if (!TryGetFile(fileName, out var file))
-                throw new My_Exception("TryGetFile is false");
+                return;
 
             file.ExecuteErrorHandler(text);
         }
         public void OnUploadErrorHandler(string fileName, string text)
         {
             if (!TryGetFile(fileName, out var file))
-                throw new My_Exception("TryGetFile is false");
+                return;
 
             file.ExecuteOnUpdateErrorHandler(text);
         }

@@ -3,7 +3,6 @@ using SoZvon.UI.My_Controls;
 using SoZvon.UI.SubClasses;
 using System;
 using System.IO;
-using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -16,6 +15,7 @@ namespace SoZvon.UI.Room_Pages
 {
     public partial class RoomPage : Page
     {
+        IMainWindow mainWindow = null!;
         readonly My_Timer my_TextingTimer = new(3);
 
         const int Min_PeoplePanel_Size = 250;
@@ -26,8 +26,6 @@ namespace SoZvon.UI.Room_Pages
 
         private readonly SemaphoreSlim _fileLock = new(1, 1);
         bool FilesLoading = false;
-
-        IMainWindow mainWindow;
 
         // Стартовое состояние страницы
         public void StartProperties(IMainWindow mainWindow_)
@@ -128,7 +126,8 @@ namespace SoZvon.UI.Room_Pages
         {
             Textbox_PrivateMsg.IsEnabled = state;
 
-            if(!state) Textbox_PrivateMsg_Hint.Visibility = Visibility.Visible;
+            if(!state) 
+                Textbox_PrivateMsg_Hint.Visibility = Visibility.Visible;
         }
         public void Textbox_IsEnabled(bool state) => TextBox.IsEnabled = state;
         // Функции срабатывающие при определенных действиях на форме
@@ -137,10 +136,10 @@ namespace SoZvon.UI.Room_Pages
             Textbox_PrivateMsg_IsEnabled(true);
             Textbox_IsEnabled(true);
 
-            Textblock_EnterRoomFirst.Visibility = Visibility.Hidden;
+            Textblock_EnterRoomFirst.Visibility = Visibility.Collapsed;
             RoomName_OnTop.Text = "Комната: " + room_name;
 
-            Grid_Users_Tags.Visibility = Visibility.Hidden;
+            Grid_Users_Tags.Visibility = Visibility.Collapsed;
         }
         public void OnExitRoom()
         {
@@ -153,7 +152,7 @@ namespace SoZvon.UI.Room_Pages
             Textbox_PrivateMsg.Text = "";
             Textbox_PrivateMsg.IsEnabled = false;
 
-            Grid_Users_Tags.Visibility = Visibility.Hidden;
+            Grid_Users_Tags.Visibility = Visibility.Collapsed;
         }
         public void OnUserMessages(Message message)
         {
@@ -169,25 +168,21 @@ namespace SoZvon.UI.Room_Pages
         }
         public void On_Grid_Tags_People_Button(string grid_tags_people_name_pressed)
         {
-            foreach (Grid button in Panel_Users_Tags.Children.OfType<Grid>().ToList())
-            {
-                if (button.Tag is not string tag)
-                    return;
+            if (Panel_Users_Tags.FindElementByTag<Grid>(grid_tags_people_name_pressed) is not Grid grid)
+                return;
 
-                if (tag == grid_tags_people_name_pressed)
-                {
-                    Grid_Users_Tags.Visibility = Visibility.Hidden;
-                    TextBox.Focus();
-                    TextBlock textblock = ((StackPanel)button.Children[1]).Children.OfType<TextBlock>().Last();
-                    Textbox_PrivateMsg.Text = textblock.Text[2..];
-                }
-            }
+            if (grid.Children[1] is not StackPanel s || s.FindElementByTag<TextBlock>("Text") is not TextBlock textBlock)
+                return;
+
+            Textbox_PrivateMsg.Text = textBlock.Text[2..];
+            Grid_Users_Tags.Visibility = Visibility.Collapsed;
+            TextBox.Focus();
         }
         public void On_Sending_Text(My_FileInfo[] fileInfos)
         {
             TextBox.Clear();
 
-            Files_Grid.Visibility = Visibility.Hidden;
+            Files_Grid.Visibility = Visibility.Collapsed;
             Chatting_Textbox_Hint.Visibility = Visibility.Visible;
 
             foreach(var fileInfo in fileInfos)
@@ -249,7 +244,7 @@ namespace SoZvon.UI.Room_Pages
         void FilesToSend_Drop(object sender, DragEventArgs e)
         {
             e.Handled = true;
-            Dragging_Files_Grid.Visibility = Visibility.Hidden;
+            Dragging_Files_Grid.Visibility = Visibility.Collapsed;
 
             if (!e.Data.GetDataPresent(DataFormats.FileDrop)) 
                 return;
@@ -493,7 +488,7 @@ namespace SoZvon.UI.Room_Pages
                 return bitmap;
             });
         }
-        bool IsLargeImage(string filePath) => new FileInfo(filePath).Length > 1_000_000; // >1MB
+        static bool IsLargeImage(string filePath) => new FileInfo(filePath).Length > 1_000_000; // >1MB
 
         bool CanDropFiles()
         {
@@ -510,7 +505,8 @@ namespace SoZvon.UI.Room_Pages
         }
         bool SetFilesLoading(bool value)
         {
-            if (!_fileLock.Wait(0)) return false;
+            if (!_fileLock.Wait(0)) 
+                return false;
 
             try
             {

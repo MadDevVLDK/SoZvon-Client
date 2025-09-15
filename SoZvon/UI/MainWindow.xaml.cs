@@ -1,6 +1,7 @@
 ﻿using SoZvon.SubClasses;
 using SoZvon.UI.SubClasses;
 using System;
+using System.Drawing.Drawing2D;
 using System.Threading.Channels;
 using System.Windows;
 using System.Windows.Controls;
@@ -12,8 +13,6 @@ using ActionToIUser = SoZvon.Main_Thread.ActionToIUser;
 using Color = System.Windows.Media.Color;
 using Colors = System.Windows.Media.Colors;
 using SolidColorBrush = System.Windows.Media.SolidColorBrush;
-
-//гит ноут
 
 namespace SoZvon.UI
 {
@@ -387,13 +386,13 @@ namespace SoZvon.UI
                     }
                 case ActionFromIUser.OnRoomNameButton:
                     {
-                        if (dict.Count != 3 || !dict.TryGetValue<List<Room>>("rooms", out var rooms) || !dict.TryGetValue<string>("active_room_button", out var active_room_button))
+                        if (dict.Count != 2 ||  !dict.TryGetValue<string>("active_room_button", out var active_room_button))
                             throw new My_Exception("no valid params");
 
                         if (!dict.TryGetValue<string>("room_name_button_pressed", out var room_name_button_pressed))
                             throw new My_Exception("no valid params");
 
-                        action = () => On_Room_Name_Button(rooms, active_room_button, room_name_button_pressed);
+                        action = () => On_Room_Name_Button(active_room_button, room_name_button_pressed);
                         break;
                     }
                 case ActionFromIUser.OnGridTagsPeopleButton:
@@ -435,11 +434,7 @@ namespace SoZvon.UI
                         if (dict.Count != 2 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<string>("id", out var id))
                             throw new My_Exception("no valid params");
 
-                        action = () =>
-                        {
-                            if (!filesManager.SetOperationID(fileName, id)) 
-                                throw new My_Exception("SetOperationID is false");
-                        };
+                        action = () => filesManager.SetOperationID(fileName, id);
                         break;
                     }
                 case ActionFromIUser.OnProgressHandler:
@@ -493,7 +488,6 @@ namespace SoZvon.UI
         }
         public async void OnIUserAction(ActionFromIUser action_IUser, Dictionary<string, object> dict) => await UserUI_Channel.Writer.WriteAsync(new(action_IUser, dict));
     }
-
     public partial class MainWindow : Window, IApplicationUI, IMainWindow
     {
         public Main_Thread.IUser User { get; }
@@ -823,9 +817,10 @@ namespace SoZvon.UI
             {
                 await foreach (Action action in pressing_button_channel.Reader.ReadAllAsync(cancellationToken))
                 {
-                    //if (!my_Buttons.CanPressButton) continue;
+                    if (!my_Buttons.CanPressButton) 
+                        continue;
 
-                    //my_Buttons.CanPressButton = false;
+                    my_Buttons.CanPressButton = false;
 
                     try
                     {
@@ -837,7 +832,7 @@ namespace SoZvon.UI
                         Make_ErrorMessage("Error_Pressing_Button_Thread_UI", ex.Message.ToString());
                     }
 
-                    //buttonTimer.Reset();
+                    buttonTimer.Reset();
                 }
             }
             catch (OperationCanceledException) { return; }
@@ -937,6 +932,11 @@ namespace SoZvon.UI
                                 dict.Add("Join_VoiceChat_Button_state", Join_VoiceChat_Button_state);
                                 break;
                             }
+                        case "MainSettings":
+                            {
+
+                                break;
+                            }
                     }
                 }
 
@@ -945,7 +945,7 @@ namespace SoZvon.UI
 
             await pressing_button_channel.Writer.WriteAsync(action);
         }
-        public async void AnyButton_DownMouse(object sender, MouseButtonEventArgs e)
+        public void AnyButton_DownMouse(object sender, MouseButtonEventArgs e)
         {
             if (sender is not Grid button)
                 return;
@@ -1014,9 +1014,9 @@ namespace SoZvon.UI
                 }
             }
 
-            await pressing_button_channel.Writer.WriteAsync(action);
+            MakeAction_Form(action);
         }
-        public async void AnyButton_EnterLeaveMouse(object sender, MouseEventArgs e)
+        public void AnyButton_EnterLeaveMouse(object sender, MouseEventArgs e)
         {
             if (sender is not Grid button) 
                 return;
@@ -1104,7 +1104,7 @@ namespace SoZvon.UI
                 my_Buttons.Fast_Button_Appearence_Change(button.Name, color_Type, tag);
             }
 
-            await pressing_button_channel.Writer.WriteAsync(action);
+            MakeAction_Form(action);
         }
 
         public void On_Login_Button(string login, string password)
@@ -1118,31 +1118,39 @@ namespace SoZvon.UI
         public void On_Exit_Button_RegPage() => my_Actions.Navigate_MainFrame_To(Page_Type.LogInPage);
         public void On_SettingsOpen_Button()
         {
-            Make_NotifyMessage("Ебои", "Пока не работает, не кликай", 5000);
+            //Make_NotifyMessage("Ебои", "Пока не работает, не кликай", 5000);
             //return;
             my_Actions.Navigate_LeftPanel_To(Page_Type.TitleSettingsPage);
             my_Actions.Navigate_RightPanel_To(Page_Type.SettingsPage);
         }
-        public void On_Room_Name_Button(List<Room> rooms, string active_room_button, string room_name_button_pressed)
+        public void On_Room_Name_Button(string active_room_button, string room_name_button_pressed)
+        {
+            if (active_room_button == room_name_button_pressed) 
+                return;
+            else if (active_room_button != "")
+                my_Buttons.Fast_Button_Appearence_Change("Room_Name_Button", Button_Color_Type.Light, active_room_button);
+
+            my_Buttons.Fast_Button_Appearence_Change("Room_Name_Button", Button_Color_Type.Strong, room_name_button_pressed);
+            my_Buttons.Set_Active_Button_Room(room_name_button_pressed);
+        }
+        public void On_Grid_Tags_People_Button(string grid_tags_people_name_pressed) => room_page.On_Grid_Tags_People_Button(grid_tags_people_name_pressed);
+        public void On_MainSettings_Button(string room_name_button_pressed)
         {
             Button_Color_Type color_Type;
 
-            if (active_room_button == room_name_button_pressed) 
-                return;
 
-            foreach (Room room in rooms)
+            foreach (Grid setting_grid in titleSettings_page.All_Settings.Children)
             {
                 color_Type = Button_Color_Type.Light;
 
-                if (room.Name_Room == room_name_button_pressed) 
+                if (setting_grid.Name == room_name_button_pressed)
                     color_Type = Button_Color_Type.Strong;
 
-                my_Buttons.Fast_Button_Appearence_Change("Room_Name_Button", color_Type, room.Name_Room);
+                my_Buttons.Fast_Button_Appearence_Change("Room_Name_Button", color_Type, room_name_button_pressed);
             }
 
             my_Buttons.Set_Active_Button_Room(room_name_button_pressed);
         }
-        public void On_Grid_Tags_People_Button(string grid_tags_people_name_pressed) => room_page.On_Grid_Tags_People_Button(grid_tags_people_name_pressed);
 
         public Grid? FindButtonGrid(string name_button, string tag_button = "")
         {
