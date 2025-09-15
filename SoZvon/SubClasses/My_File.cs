@@ -726,8 +726,8 @@ namespace SoZvon.SubClasses
                 }
                 catch (IOException) when (attempt < maxRetries)
                 {
-                    // Ждем перед повторной попыткой
                     await Task.Delay(100 * attempt);
+                    //filesManager.OnError("File_Error", $"Не удалось открыть изображение. Попытка --> {attempt}");
                     continue;
                 }
                 catch (Exception ex)
