@@ -1,9 +1,11 @@
-﻿using System.Collections.Frozen;
+﻿using SoZvon.ClientSettingsManager;
+using System.Collections.Frozen;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Navigation;
 using Keys = System.Windows.Forms.Keys;
 
 namespace SoZvon.UI.Room_Pages
@@ -94,11 +96,11 @@ namespace SoZvon.UI.Room_Pages
         void ResetToDefault();
         void SaveCurrentState();
         void UpdateUI();
-        void CreateUI(StackPanel panel);
+        StackPanel CreateUI();
     }
-    public class ComboBoxSetting(string id, string description, string defaultValue, Dictionary<string, string> options, ISettingsManager settingsManager) : ISetting
+    public class ComboBoxSetting(string id, string description, string defaultValue, Dictionary<string, string> options, ISettingsUIManager settingsUIManager) : ISetting
     {
-        readonly ISettingsManager settingsManager = settingsManager;
+        readonly ISettingsUIManager settingsUIManager = settingsUIManager;
 
         public string Id { get; } = id;
         public string Description { get; } = description;
@@ -110,7 +112,7 @@ namespace SoZvon.UI.Room_Pages
         public Dictionary<string, string> Options { get; private set; } = options;
         public ComboBox ComboBoxUI { get; set; } = null!;
 
-        public ComboBoxSetting(string id, string description, string defaultValue, Dictionary<string, string> options, ComboBox comboBoxUI, ISettingsManager settingsManager) : this(id, description, defaultValue, options, settingsManager)
+        public ComboBoxSetting(string id, string description, string defaultValue, Dictionary<string, string> options, ComboBox comboBoxUI, ISettingsUIManager settingsUIManager) : this(id, description, defaultValue, options, settingsUIManager)
         {
             ComboBoxUI = comboBoxUI;
         }
@@ -123,7 +125,7 @@ namespace SoZvon.UI.Room_Pages
         public void SaveCurrentState()
         {
             if(!OldSelectedValue.Equals(SelectedValue))
-                settingsManager.ComboBox_OnSelectionChanged(this, SelectedValue);
+                settingsUIManager.ComboBox_OnSelectionChanged(this, SelectedValue);
 
             OldSelectedValue = SelectedValue;
         }
@@ -143,7 +145,7 @@ namespace SoZvon.UI.Room_Pages
                 }
             }
         }
-        public void CreateUI(StackPanel panel)
+        public StackPanel CreateUI()
         {
             var stackPanel = new StackPanel
             {
@@ -182,7 +184,8 @@ namespace SoZvon.UI.Room_Pages
 
             stackPanel.Children.Add(textBlock);
             stackPanel.Children.Add(comboBox);
-            panel.Children.Add(stackPanel);
+
+            return stackPanel;
         }
         public void UpdateValuesUI(ComboBox comboBox, Dictionary<string, string> values)
         {
@@ -227,9 +230,9 @@ namespace SoZvon.UI.Room_Pages
             SelectedValue = selectedItem.Tag?.ToString() ?? string.Empty;
         }
     }
-    public class CheckboxSetting(string id, string description, bool isChecked, ISettingsManager settingsManager) : ISetting
+    public class CheckboxSetting(string id, string description, bool isChecked, ISettingsUIManager settingsUIManager) : ISetting
     {
-        readonly ISettingsManager settingsManager = settingsManager;
+        readonly ISettingsUIManager settingsUIManager = settingsUIManager;
 
         public string Id { get; } = id;
         public string Description { get; } = description;
@@ -240,7 +243,7 @@ namespace SoZvon.UI.Room_Pages
 
         public CheckBox CheckBoxUI { get; set; } = null!;
 
-        public CheckboxSetting(string id, string description, bool isChecked, CheckBox checkBoxUI, ISettingsManager settingsManager) : this(id, description, isChecked, settingsManager)
+        public CheckboxSetting(string id, string description, bool isChecked, CheckBox checkBoxUI, ISettingsUIManager settingsUIManager) : this(id, description, isChecked, settingsUIManager)
         {
             CheckBoxUI = checkBoxUI;
         }
@@ -264,7 +267,7 @@ namespace SoZvon.UI.Room_Pages
 
             CheckBoxUI.IsChecked = IsChecked;
         }
-        public void CreateUI(StackPanel panel)
+        public StackPanel CreateUI()
         {
             var stackPanel = new StackPanel
             {
@@ -288,7 +291,8 @@ namespace SoZvon.UI.Room_Pages
             CheckBoxUI = checkBox;
 
             stackPanel.Children.Add(checkBox);
-            panel.Children.Add(stackPanel);
+
+            return stackPanel;
         }
 
         void CheckBox_Changed(object sender, RoutedEventArgs e)
@@ -311,9 +315,9 @@ namespace SoZvon.UI.Room_Pages
 
         void OnHotkeyPressed();
     }
-    public class HotkeySetting(string id, string description, Key key, ModifierKeys modifiers, ISettingsManager settingsManager, bool useFormCapture = true) : ISetting, IHotkeySettings
+    public class HotkeySetting(string id, string description, Key key, ModifierKeys modifiers, ISettingsUIManager settingsUIManager, bool useFormCapture = true) : ISetting, IHotkeySettings
     {
-        readonly ISettingsManager settingsManager = settingsManager;
+        readonly ISettingsUIManager settingsUIManager = settingsUIManager;
 
         public string Id { get; } = id;
         public string Description { get; } = description;
@@ -333,7 +337,7 @@ namespace SoZvon.UI.Room_Pages
         public CheckBox CaptureModeCheckBox { get; set; } = null!;
         public TextBlock CaptureModeLabel { get; set; } = null!;
 
-        public HotkeySetting(string id, string description, Key key, ModifierKeys modifiers, Button buttonUI, CheckBox captureModeCheckBox, ISettingsManager settingsManager, bool useFormCapture = true) : this(id, description, key, modifiers, settingsManager, useFormCapture)
+        public HotkeySetting(string id, string description, Key key, ModifierKeys modifiers, Button buttonUI, CheckBox captureModeCheckBox, ISettingsUIManager settingsUIManager, bool useFormCapture = true) : this(id, description, key, modifiers, settingsUIManager, useFormCapture)
         {
             ButtonUI = buttonUI;
             CaptureModeCheckBox = captureModeCheckBox;
@@ -371,7 +375,7 @@ namespace SoZvon.UI.Room_Pages
             OldUseFormCapture = UseFormCapture;
         }
 
-        public void OnHotkeyPressed() => settingsManager.OnHotkeyPressed(this, OldUseFormCapture);
+        public void OnHotkeyPressed() { }//settingsManager.OnHotkeyPressed(this, OldUseFormCapture);
 
         public void UpdateUI()
         {
@@ -392,7 +396,7 @@ namespace SoZvon.UI.Room_Pages
                 CaptureModeLabel.Text = UseFormCapture ? "Только в приложении" : "В системе";
             }
         }
-        public void CreateUI(StackPanel panel)
+        public StackPanel CreateUI()
         {
             var stackPanel = new StackPanel
             {
@@ -439,9 +443,9 @@ namespace SoZvon.UI.Room_Pages
             checkBox.Checked += CheckBox_Changed;
             checkBox.Unchecked += CheckBox_Changed;
 
-            button.Click += settingsManager.HotkeyButton_Click;
-            button.PreviewKeyDown += settingsManager.HotkeyButton_PreviewKeyDown;
-            button.LostFocus += settingsManager.HotkeyButton_LostFocus;
+            //button.Click += settingsUIManager.HotkeyButton_Click;
+            //button.PreviewKeyDown += settingsUIManager.HotkeyButton_PreviewKeyDown;
+            //button.LostFocus += settingsUIManager.HotkeyButton_LostFocus;
 
             ButtonUI = button;
             CaptureModeCheckBox = checkBox;
@@ -452,7 +456,7 @@ namespace SoZvon.UI.Room_Pages
             stackPanel.Children.Add(checkBox);
             stackPanel.Children.Add(checkBoxLabel);
 
-            panel.Children.Add(stackPanel);
+            return stackPanel;
         }
         
         void CheckBox_Changed(object sender, RoutedEventArgs e)
@@ -522,419 +526,7 @@ namespace SoZvon.UI.Room_Pages
             return text + key.ToString();
         }
     }
-
-    public interface ISettingsManager
-    {
-        void ComboBox_OnSelectionChanged(ComboBoxSetting setting, string selectedValue);
-
-        void HotkeyButton_Click(object sender, RoutedEventArgs e);
-        void HotkeyButton_PreviewKeyDown(object sender, KeyEventArgs e);
-        void HotkeyButton_LostFocus(object sender, RoutedEventArgs e);
-
-        void OnHotkeyPressed(IHotkeySettings setting, bool oldUseFormCapture);
-    }
-    public class SettingsManager(ISettingsPage settingsPage) : ISettingsManager
-    {
-        readonly ISettingsPage settingsPage = settingsPage;
-        readonly GlobalHotKeyManager globalHotKeyManager = new();
-
-        bool hasInvalidKey = false;
-        string? currentHotkeyButtonId;
-
-        readonly ReaderWriterLockSlim settingsLock = new();
-
-        readonly FrozenSet<Key> skipKeys = new HashSet<Key> { Key.LeftCtrl, Key.RightCtrl, Key.LeftAlt, Key.RightAlt, Key.LeftShift, Key.RightShift }.ToFrozenSet();
-        readonly FrozenSet<Key> bannedKeys = new HashSet<Key> { Key.Escape, Key.Apps, Key.System, Key.LWin, Key.RWin }.ToFrozenSet();
-
-        readonly Dictionary<string, ISetting> currentSettings = [];
-        readonly Dictionary<string, ISetting> lastSettings = [];
-
-        public void LoadDefaultSettingsButtons(StackPanel panel)
-        {
-            settingsLock.EnterWriteLock();
-            try
-            {
-                AddComboBox("Theme", "light", "Тема оформления", new() {
-                    ["light"] = "Светлая"
-                });
-
-                AddComboBox("Microphones", "auto", "Микрофон", new() {
-                    ["auto"] = "По умолчанию"
-                });
-
-                AddCheckBox("NotifyApp", false, "Включить уведомления");
-                AddCheckBox("ServerAutoConnect", false, "Автоподключение к серверу при входе в приложение");
-
-                AddHotkey("MicToggle", Key.M, ModifierKeys.Control, "Вкл/Выкл микрофон", false);
-                AddHotkey("ExitApp", Key.Q, ModifierKeys.Control | ModifierKeys.Alt, "Выход из приложения");
-                AddHotkey("AutoConnect", Key.A, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt, "Переподключиться к серверу");
-
-                CreateUIs(panel);
-                SaveCurrentSettings();
-                UpdateUIs();
-
-                _ = globalHotKeyManager.ReadKeysAsync();
-                globalHotKeyManager.StartChecking();
-            }
-            finally
-            {
-                settingsLock.ExitWriteLock();
-            }
-        }
-
-        public bool ChangeComboboxValues(string id, Dictionary<string, string> values)
-        {
-            settingsLock.EnterWriteLock();
-            try
-            {
-                if (!TryGetSettingLast<ComboBoxSetting>(id, out var comboBox))
-                    return false;
-
-                comboBox.ChangeComboboxValues(values);
-                return true;
-            }
-            finally
-            {
-                settingsLock.ExitWriteLock();
-            }
-        }
-
-        public bool TrySaveChanges(out string error_text)
-        {
-            settingsLock.EnterWriteLock();
-            try
-            {
-                if (hasInvalidKey)
-                {
-                    error_text = "Невозможно сохранить: назначена недопустимая клавиша";
-                    return false;
-                }
-
-                if (CheckDuplicates())
-                {
-                    error_text = "Невозможно сохранить: обнаружены повторяющиеся комбинации клавиш";
-                    return false;
-                }
-
-                if (!HasChanges())
-                {
-                    error_text = "Настройки не были изменены.";
-                    return false;
-                }
-
-                foreach (var setting in currentSettings.Values)
-                {
-                    setting.SaveCurrentState();
-                }
-
-                SaveCurrentSettings();
-                error_text = default!;
-
-                return true;
-            }
-            finally
-            {
-                settingsLock.ExitWriteLock();
-            }
-        }
-        public bool TryResetSettingsToLast(out string error_text)
-        {
-            settingsLock.EnterWriteLock();
-            try
-            {
-                if (!HasChanges())
-                {
-                    error_text = "Настройки уже соответствуют сохраненным значениям.";
-                    return false;
-                }
-
-                foreach (var setting in currentSettings.Values)
-                {
-                    setting.ResetToOriginal();
-                    setting.UpdateUI();
-                }
-
-                hasInvalidKey = false;
-                error_text = default!;
-
-                return true;
-            }
-            finally
-            {
-                settingsLock.ExitWriteLock();
-            }
-        }
-        public bool TryResetSettingsToDefault(out string error_text)
-        {
-            settingsLock.EnterWriteLock();
-            try
-            {
-                if (!HasChangesDefaultSettings())
-                {
-                    error_text = "Настройки уже соответствуют сохраненным значениям.";
-                    return false;
-                }
-
-                foreach (var setting in currentSettings.Values)
-                {
-                    setting.ResetToDefault();
-                    setting.UpdateUI();
-                }
-
-                hasInvalidKey = false;
-                error_text = default!;
-
-                return true;
-            }
-            finally
-            {
-                settingsLock.ExitWriteLock();
-            }
-        }
-
-        public void HotkeyButton_Click(object sender, RoutedEventArgs e)
-        {
-            settingsLock.EnterWriteLock();
-            try
-            {
-                if (sender is not Button button || button.Tag is not string id)
-                    return;
-
-                currentHotkeyButtonId = id;
-
-                if (!TryGetSetting<HotkeySetting>(id, out var hotkey))
-                    return;
-
-                button.Content = "Нажмите клавишу...";
-                hotkey.ResetButtonAppearance();
-                button.Focus();
-            }
-            finally
-            {
-                settingsLock.ExitWriteLock();
-            }
-        }
-        public void HotkeyButton_PreviewKeyDown(object sender, KeyEventArgs e)
-        {
-            settingsLock.EnterWriteLock();
-            try
-            {
-                Key newKey = e.Key;
-                ModifierKeys newModifiers = Keyboard.Modifiers;
-
-                if (currentHotkeyButtonId is not string id)
-                    return;
-
-                if (skipKeys.Contains(newKey))
-                    return;
-
-                if (!TryGetSetting<HotkeySetting>(id, out var hotkeySetting))
-                    return;
-
-                if (bannedKeys.Contains(newKey))
-                {
-                    hotkeySetting.ButtonUI.Content = "Недопустимая клавиша";
-                    hotkeySetting.HighlightButton(true);
-
-                    hasInvalidKey = true;
-                    return;
-                }
-
-                // Проверяем на дублирование
-                bool isDuplicate = CheckForHotkeyDuplicates(id, newKey, newModifiers);
-
-                hotkeySetting.Key = newKey;
-                hotkeySetting.Modifiers = newModifiers;
-                hotkeySetting.IsDuplicate = isDuplicate;
-
-                // Обновляем интерфейс
-                UpdateUIs();
-                currentHotkeyButtonId = null;
-                Keyboard.ClearFocus();
-
-                hasInvalidKey = false;
-
-                e.Handled = true;
-            }
-            finally
-            {
-                settingsLock.ExitWriteLock();
-            }
-        }
-        public void HotkeyButton_LostFocus(object sender, RoutedEventArgs e)
-        {
-            settingsLock.EnterWriteLock();
-            try
-            {
-                if (sender is not Button button || button.Tag is not string id)
-                    return;
-
-                // Если это текущая активная кнопка, сбрасываем её состояние
-                if (id == currentHotkeyButtonId)
-                {
-                    currentHotkeyButtonId = null;
-
-                    if (!TryGetSetting<HotkeySetting>(id, out var hotkey))
-                        return;
-
-                    hotkey.UpdateUI();
-                }
-            }
-            finally
-            {
-                settingsLock.ExitWriteLock();
-            }
-        }
-
-        public void OnHotkeyPressed(IHotkeySettings setting, bool oldUseFormCapture)
-        {
-            if (oldUseFormCapture && !settingsPage.IsWindowFocused())
-                return;
-
-            switch (setting.Id)
-            {
-                case "ExitApp":
-                    {
-                        settingsPage.CloseApplication();
-                        break;
-                    }
-                case "AutoConnect":
-                    {
-                        settingsPage.ReloadConnectionServ();
-                        break;
-                    }
-                default:
-                    break;
-            }
-        }
-        public void ComboBox_OnSelectionChanged(ComboBoxSetting setting, string selectedValue)
-        {
-            switch (setting.Id)
-            {
-                case "Microphones":
-                    {
-                        settingsPage.SelectMicrophoneByName(selectedValue);
-                        break;
-                    }
-                default:
-                    break;
-            }
-        }
-
-        void AddComboBox(string id, string defaultValue, string description, Dictionary<string, string> options) => currentSettings[id] = new ComboBoxSetting(id, description, defaultValue, options, this);
-        void AddCheckBox(string id, bool isChecked, string description) => currentSettings[id] = new CheckboxSetting(id, description, isChecked, this);
-        void AddHotkey(string id, Key key, ModifierKeys modifierKeys, string description, bool useFormCapture = true) => currentSettings[id] = new HotkeySetting(id, description, key, modifierKeys, this, useFormCapture);
-        void SaveCurrentSettings()
-        {
-            lastSettings.Clear();
-
-            foreach (var pair in currentSettings)
-            {
-                var setting = CloneSetting(pair.Value);
-
-                lastSettings[pair.Key] = setting;
-
-                if (setting is IHotkeySettings hotkey)
-                    globalHotKeyManager.AddorUpdateHotkey(hotkey);
-            }
-        }
-
-        void CreateUIs(StackPanel panel)
-        {
-            panel.Children.Clear();
-
-            foreach (var setting in currentSettings.Values)
-            {
-                setting.CreateUI(panel);
-            }
-        }
-        void UpdateUIs()
-        {
-            foreach (var setting in currentSettings.Values)
-            {
-                setting.UpdateUI();
-            }
-        }
-
-        bool CheckForHotkeyDuplicates(string currentHotkeyId, Key newKey, ModifierKeys newModifiers)
-        {
-            ResetHotkeyDuplicates();
-
-            bool isDuplicate = false;
-
-            foreach (var setting in currentSettings.Values.OfType<HotkeySetting>())
-            {
-                if (setting.Id != currentHotkeyId &&
-                    setting.Key == newKey &&
-                    setting.Modifiers == newModifiers)
-                {
-                    isDuplicate = true;
-                    setting.IsDuplicate = true;
-                }
-            }
-
-            return isDuplicate;
-        }
-        bool CheckDuplicates()
-        {
-            foreach (var setting in currentSettings.Values)
-            {
-                switch (setting)
-                {
-                    case HotkeySetting hotkey:
-                        {
-                            if (hotkey.IsDuplicate)
-                                return true;
-                            break;
-                        }
-                }
-            }
-
-            return false;
-        }
-        void ResetHotkeyDuplicates()
-        {
-            foreach (var setting in currentSettings.Values)
-            {
-                if (setting is HotkeySetting hotkey)
-                    hotkey.IsDuplicate = false;
-            }
-        }
-
-        bool HasChanges() => currentSettings.Values.Any(setting => setting.HasChanges());
-        bool HasChangesDefaultSettings() => currentSettings.Values.Any(setting => setting.HasChangesDefaultSettings());
-
-        ISetting CloneSetting(ISetting setting)
-        {
-            return setting switch
-            {
-                HotkeySetting hotkey => new HotkeySetting(hotkey.Id, hotkey.Description, hotkey.Key, hotkey.Modifiers, hotkey.ButtonUI, hotkey.CaptureModeCheckBox, this, hotkey.UseFormCapture),
-                CheckboxSetting checkbox => new CheckboxSetting(checkbox.Id, checkbox.Description, checkbox.IsChecked, checkbox.CheckBoxUI, this),
-                ComboBoxSetting comboBox => new ComboBoxSetting(comboBox.Id, comboBox.Description, comboBox.DefaultValue, comboBox.Options, comboBox.ComboBoxUI, this),
-                _ => throw new NotSupportedException("Unsupported setting type")
-            };
-        }
-        bool TryGetSetting<T>(string key, out T value)
-        {
-            value = default!;
-            if (currentSettings.TryGetValue(key, out var obj) && obj is T typedValue)
-            {
-                value = typedValue;
-                return true;
-            }
-            return false;
-        }
-        bool TryGetSettingLast<T>(string key, out T value)
-        {
-            value = default!;
-            if (lastSettings.TryGetValue(key, out var obj) && obj is T typedValue)
-            {
-                value = typedValue;
-                return true;
-            }
-            return false;
-        }
-    }
+    
 
     public interface ISettingsPage
     {
@@ -945,22 +537,26 @@ namespace SoZvon.UI.Room_Pages
     }
     public partial class SettingsPage : Page, ISettingsPage
     {
-        SettingsManager settingsManager;
-        IMainWindow mainWindow;
+        IMainWindow mainWindow = null!;
+        ISettingsService settingsService = null!;
+        ISettingsUIManager settingsUIManager = null!;
 
         public void StartProperties(IMainWindow mainWindow_)
         {
             mainWindow = mainWindow_;
             InitializeComponent();
 
-            settingsManager = new(this);
-            settingsManager.LoadDefaultSettingsButtons(SettingsPanel);
+            settingsService = new SettingsService(new XmlSettingsRepository());
+            settingsUIManager = new SettingsUIManager(settingsService);
+
+            settingsService.LoadSettings();
+            settingsUIManager.InitializeUI(SettingsPanel, settingsService.GetSettings());
         }
 
         public void OnMicrophonesInfo(Dictionary<string, string> values)
         {
-            if (!settingsManager.ChangeComboboxValues("Microphones", values))
-                mainWindow.Make_ErrorMessage("Settings", "ChangeComboboxValues is false");
+            //if (!settingsManager.ChangeComboboxValues("Microphones", values))
+            //    mainWindow.Make_ErrorMessage("Settings", "ChangeComboboxValues is false");
         }
         public void SelectMicrophoneByName(string name) => mainWindow.SelectMicrophoneByName(name);
         public void ReloadConnectionServ() => mainWindow.ReloadConnectionServ();
@@ -970,7 +566,9 @@ namespace SoZvon.UI.Room_Pages
 
         void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!settingsManager.TrySaveChanges(out var error_text))
+            var (success, error_text) = settingsService.TrySaveSettings();
+
+            if (!success)
             {
                 mainWindow.Make_ErrorMessage("Settings", error_text ?? "unknown_error");
             }
@@ -978,7 +576,9 @@ namespace SoZvon.UI.Room_Pages
         }
         void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!settingsManager.TryResetSettingsToLast(out var error_text))
+            var (success, error_text) = settingsService.TryResetToLast();
+
+            if (!success)
             {
                 mainWindow.Make_ErrorMessage("Settings", error_text ?? "unknown_error");
             }
@@ -986,7 +586,9 @@ namespace SoZvon.UI.Room_Pages
         }
         void ResetDefaultButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!settingsManager.TryResetSettingsToDefault(out var error_text))
+            var (success, error_text) = settingsService.TryResetToDefault();
+
+            if (!success)
             {
                 mainWindow.Make_ErrorMessage("Settings", error_text ?? "unknown_error");
             }
