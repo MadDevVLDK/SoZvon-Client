@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Frozen;
+﻿using System.Collections.Frozen;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
@@ -21,6 +20,8 @@ namespace SoZvon.UI.Room_Pages
         (bool success, string error_text) TryResetToLast();
         (bool success, string error_text) TryResetToDefault();
 
+        void OnHotkeyPressed(string Id, bool OldUseFormCapture);
+
         void UpdateSetting<T>(string id, T value);
     }
     public interface ISettingsUIManager
@@ -40,7 +41,7 @@ namespace SoZvon.UI.Room_Pages
         void CheckBox_Changed(string id, bool value);
         void HotkeyCheckBox_Changed(string id, bool value);
 
-        void OnHotkeyPressed(IHotkeySettings setting, bool oldUseFormCapture);
+        void OnHotkeyPressed(string id);
     }
 
     public class GlobalHotKeyManager
@@ -58,7 +59,7 @@ namespace SoZvon.UI.Room_Pages
             lock (currentKeys_lock)
                 currentKeys[hotkeySettings.Id] = hotkeySettings;
         }
-        public void ClearAndAddRangeHotkey(IHotkeySettings[] hotkeySettings)
+        public void ClearAndAddRangeHotkey(List<IHotkeySettings> hotkeySettings)
         {
             lock (currentKeys_lock)
             {
@@ -136,130 +137,81 @@ namespace SoZvon.UI.Room_Pages
     public class XmlSettingsRepository
     {
         readonly string xmlFilePath = "settings.xml";
-        readonly XDocument xmlDocument;
         readonly object lockOperations = new();
 
-        readonly Dictionary<string, string> defaultSettings = new() {
-            ["Theme"] = "light",
-            ["Microphones"] = "auto",
-            ["NotifyApp"] = "false",
-            ["ServerAutoConnect"] = "false"
-        };
-        readonly Dictionary<string, Tuple<Key, ModifierKeys, bool>> defaultHotkeys = new() {
-            ["MicToggle"] =  new(Key.M, ModifierKeys.Control, false),
-            ["ExitApp"] = new(Key.Q, ModifierKeys.Control | ModifierKeys.Alt, true),
-            ["AutoConnect"] = new(Key.A, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt, true)
-        };
+        XDocument xmlDocument = null!;
 
-        public XmlSettingsRepository()
-        {
-            xmlDocument = LoadOrCreateXml();
-            // Сохраняем дефолтные значения при первом запуске
-            EnsureDefaultValues();
-        }
+        Dictionary<string, string> defaultSettings = null!;
+        Dictionary<string, Tuple<Key, ModifierKeys, bool>> defaultHotkeys = null!;
 
-        void EnsureDefaultValues()
+        public void StartProperties(Dictionary<string, string> _defaultSettings, Dictionary<string, Tuple<Key, ModifierKeys, bool>> _defaultHotkeys)
         {
             lock (lockOperations)
             {
-                bool needsSave = false;
+                defaultSettings = _defaultSettings;
+                defaultHotkeys = _defaultHotkeys;
 
-                // Проверяем и добавляем отсутствующие обычные настройки
-                foreach (var setting in defaultSettings)
-                {
-                    var element = xmlDocument.Root?.Element(setting.Key);
-                    if (element == null)
-                    {
-                        xmlDocument.Root?.Add(new XElement(setting.Key, setting.Value));
-                        needsSave = true;
-                    }
-                }
-
-                // Проверяем и добавляем отсутствующие горячие клавиши
-                var hotkeysElement = xmlDocument.Root?.Element("Hotkeys");
-                if (hotkeysElement == null)
-                {
-                    hotkeysElement = new XElement("Hotkeys");
-                    xmlDocument.Root?.Add(hotkeysElement);
-                    needsSave = true;
-                }
-
-                foreach (var hotkey in defaultHotkeys)
-                {
-                    var hotkeyElement = hotkeysElement.Element(hotkey.Key);
-                    if (hotkeyElement == null)
-                    {
-                        hotkeyElement = new XElement(hotkey.Key,
-                            new XElement("Key", hotkey.Value.Item1.ToString()),
-                            new XElement("Modifiers", ModifiersToString(hotkey.Value.Item2)),
-                            new XElement("Capture", hotkey.Value.Item3.ToString().ToLower())
-                        );
-                        hotkeysElement.Add(hotkeyElement);
-                        needsSave = true;
-                    }
-                }
-
-                if (needsSave)
-                {
-                    SaveXml(xmlDocument);
-                }
+                xmlDocument = LoadOrCreateXml();
+                EnsureDefaultValues();
             }
         }
-
+        
         XDocument LoadOrCreateXml()
         {
-            lock (lockOperations)
+            if (File.Exists(xmlFilePath))
             {
-                if (File.Exists(xmlFilePath))
+                try
                 {
-                    try
-                    {
-                        return XDocument.Load(xmlFilePath);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Error loading XML settings: {ex.Message}");
-                        return CreateDefaultXml();
-                    }
+                    return XDocument.Load(xmlFilePath);
                 }
-                else
+                catch (Exception ex)
                 {
+                    Console.WriteLine($"Error loading XML settings: {ex.Message}");
                     return CreateDefaultXml();
                 }
+            }
+            else
+            {
+                return CreateDefaultXml();
             }
         }
         XDocument CreateDefaultXml()
         {
-            var doc = new XDocument(
-                new XElement("Settings",
-                    new XElement("Theme", "light"),
-                    new XElement("Microphones", "auto"),
-                    new XElement("NotifyApp", "false"),
-                    new XElement("ServerAutoConnect", "false"),
-                    new XElement("Hotkeys",
-                        new XElement("MicToggle",
-                            new XElement("Key", "M"),
-                            new XElement("Modifiers", "Control"),
-                            new XElement("Capture", "false")
-                        ),
-                        new XElement("ExitApp",
-                            new XElement("Key", "Q"),
-                            new XElement("Modifiers", "Control+Alt"),
-                            new XElement("Capture", "true")
-                        ),
-                        new XElement("AutoConnect",
-                            new XElement("Key", "A"),
-                            new XElement("Modifiers", "Control+Shift+Alt"),
-                            new XElement("Capture", "true")
-                        )
-                    )
-                )
-            );
+            var rootElement = new XElement("Settings");
 
+            // Добавляем обычные настройки
+            if (defaultSettings != null)
+            {
+                foreach (var setting in defaultSettings)
+                {
+                    rootElement.Add(new XElement(setting.Key, setting.Value));
+                }
+            }
+
+            // Добавляем горячие клавиши
+            if (defaultHotkeys != null && defaultHotkeys.Count > 0)
+            {
+                var hotkeysElement = new XElement("Hotkeys");
+
+                foreach (var hotkey in defaultHotkeys)
+                {
+                    var hotkeyElement = new XElement(hotkey.Key);
+
+                    // Предполагаем, что Tuple содержит 3 элемента
+                    hotkeyElement.Add(new XElement("Key", hotkey.Value.Item1.ToString() ?? ""));
+                    hotkeyElement.Add(new XElement("Modifiers", ModifiersToString(hotkey.Value.Item2)));
+                    hotkeyElement.Add(new XElement("Capture", hotkey.Value.Item3.ToString().ToLower()));
+
+                    hotkeysElement.Add(hotkeyElement);
+                }
+
+                rootElement.Add(hotkeysElement);
+            }
+
+            var doc = new XDocument(rootElement);
             SaveXml(doc);
             return doc;
         }
-
         void SaveXml(XDocument doc)
         {
             lock (lockOperations)
@@ -274,46 +226,101 @@ namespace SoZvon.UI.Room_Pages
                 }
             }
         }
-        public void SaveSetting(string id, string value)
+        void EnsureDefaultValues()
         {
-            lock (lockOperations)
+            bool needsSave = false;
+
+            // Проверяем и добавляем отсутствующие обычные настройки
+            foreach (var setting in defaultSettings)
             {
-                var element = xmlDocument.Root?.Element(id);
-                if (element != null)
+                var element = xmlDocument.Root?.Element(setting.Key);
+                if (element == null)
                 {
-                    element.Value = value;
+                    xmlDocument.Root?.Add(new XElement(setting.Key, setting.Value));
+                    needsSave = true;
+                }
+            }
+
+            // Проверяем и добавляем отсутствующие горячие клавиши
+            var hotkeysElement = xmlDocument.Root?.Element("Hotkeys");
+            if (hotkeysElement == null)
+            {
+                hotkeysElement = new XElement("Hotkeys");
+                xmlDocument.Root?.Add(hotkeysElement);
+                needsSave = true;
+            }
+
+            foreach (var hotkey in defaultHotkeys)
+            {
+                var hotkeyElement = hotkeysElement.Element(hotkey.Key);
+                if (hotkeyElement == null)
+                {
+                    hotkeyElement = new XElement(hotkey.Key,
+                        new XElement("Key", hotkey.Value.Item1.ToString()),
+                        new XElement("Modifiers", ModifiersToString(hotkey.Value.Item2)),
+                        new XElement("Capture", hotkey.Value.Item3.ToString().ToLower())
+                    );
+                    hotkeysElement.Add(hotkeyElement);
+                    needsSave = true;
                 }
                 else
                 {
-                    xmlDocument.Root?.Add(new XElement(id, value));
-                }
-                SaveXml(xmlDocument);
-            }
-        }
+                    //доделать парсинг: Проверка каждого значения на валидность ("Key" = Key, "Modifiers" = ModifierKeys, "Capture" = bool)
+                    bool hotkeyNeedsFix = false;
 
-        public string GetSetting(string id, string defaultValue = "")
-        {
-            lock (lockOperations)
-            {
-                return xmlDocument.Root?.Element(id)?.Value ?? defaultValue;
-            }
-        }
-        public Dictionary<string, string> GetAllSettings()
-        {
-            var settings = new Dictionary<string, string>();
-
-            lock (lockOperations)
-            {
-                foreach (var element in xmlDocument.Root?.Elements() ?? [])
-                {
-                    if (element.Name != "Hotkeys")
+                    // Проверка Key
+                    var keyElement = hotkeyElement.Element("Key");
+                    if (keyElement == null)
                     {
-                        settings[element.Name.LocalName] = element.Value;
+                        keyElement = new XElement("Key", hotkey.Value.Item1.ToString());
+                        hotkeyElement.Add(keyElement);
+                        hotkeyNeedsFix = true;
+                    }
+                    else if (!IsValidKey(keyElement.Value))
+                    {
+                        keyElement.Value = hotkey.Value.Item1.ToString();
+                        hotkeyNeedsFix = true;
+                    }
+
+                    // Проверка Modifiers
+                    var modifiersElement = hotkeyElement.Element("Modifiers");
+                    if (modifiersElement == null)
+                    {
+                        modifiersElement = new XElement("Modifiers", ModifiersToString(hotkey.Value.Item2));
+                        hotkeyElement.Add(modifiersElement);
+                        hotkeyNeedsFix = true;
+                    }
+                    else if (!IsValidModifiers(modifiersElement.Value, out var parsedModifiers))
+                    {
+                        modifiersElement.Value = ModifiersToString(hotkey.Value.Item2);
+                        hotkeyNeedsFix = true;
+                    }
+
+                    // Проверка Capture
+                    var captureElement = hotkeyElement.Element("Capture");
+                    if (captureElement == null)
+                    {
+                        captureElement = new XElement("Capture", hotkey.Value.Item3.ToString().ToLower());
+                        hotkeyElement.Add(captureElement);
+                        hotkeyNeedsFix = true;
+                    }
+                    else if (!bool.TryParse(captureElement.Value, out var captureValue) || captureValue != hotkey.Value.Item3)
+                    {
+                        captureElement.Value = hotkey.Value.Item3.ToString().ToLower();
+                        hotkeyNeedsFix = true;
+                    }
+
+                    if (hotkeyNeedsFix)
+                    {
+                        needsSave = true;
                     }
                 }
             }
 
-            return settings;
+            if (needsSave)
+            {
+                SaveXml(xmlDocument);
+            }
         }
 
         public void SaveHotkey(string id, Key key, ModifierKeys modifiers, bool useFormCapture)
@@ -355,9 +362,126 @@ namespace SoZvon.UI.Room_Pages
 
                 Enum.TryParse<Key>(keyStr, true, out var key);
                 var modifiers = StringToModifiers(modifiersStr);
-                var useFormCapture = bool.Parse(captureStr);
+
+                if(!bool.TryParse(captureStr, out bool result)) 
+                    result = false;
+
+                var useFormCapture = result;
 
                 return new(key, modifiers, useFormCapture);
+            }
+        }
+
+        public void SaveSetting(string id, string value)
+        {
+            lock (lockOperations)
+            {
+                var element = xmlDocument.Root?.Element(id);
+                if (element != null)
+                {
+                    element.Value = value;
+                }
+                else
+                {
+                    xmlDocument.Root?.Add(new XElement(id, value));
+                }
+                SaveXml(xmlDocument);
+            }
+        }
+        public string GetSetting(string id, string defaultValue = "")
+        {
+            lock (lockOperations)
+            {
+                return xmlDocument.Root?.Element(id)?.Value ?? defaultValue;
+            }
+        }
+        public void DeleteSetting(string id)
+        {
+            lock (lockOperations)
+            {
+                var element = xmlDocument.Root?.Element(id);
+                element?.Remove();
+                SaveXml(xmlDocument);
+            }
+        }
+        public void ClearAllSettings(Dictionary<string, string> defaultSettings, Dictionary<string, Tuple<Key, ModifierKeys, bool>> defaultHotkeys)
+        {
+            lock (lockOperations)
+            {
+                // Сбрасываем обычные настройки к дефолтным значениям
+                foreach (var setting in defaultSettings)
+                {
+                    var element = xmlDocument.Root?.Element(setting.Key);
+                    if (element != null)
+                    {
+                        element.Value = setting.Value;
+                    }
+                }
+
+                // Сбрасываем горячие клавиши к дефолтным значениям
+                xmlDocument.Root?.Element("Hotkeys")?.Remove();
+
+                // Создаем новый элемент с дефолтными горячими клавишами
+                var newHotkeysElement = new XElement("Hotkeys");
+                foreach (var hotkey in defaultHotkeys)
+                {
+                    newHotkeysElement.Add(new XElement(hotkey.Key,
+                        new XElement("Key", hotkey.Value.Item1.ToString()),
+                        new XElement("Modifiers", ModifiersToString(hotkey.Value.Item2)),
+                        new XElement("Capture", hotkey.Value.Item3.ToString().ToLower())
+                    ));
+                }
+
+                xmlDocument.Root?.Add(newHotkeysElement);
+                SaveXml(xmlDocument);
+            }
+        }
+
+        static bool IsValidKey(string keyString)
+        {
+            try
+            {
+                // Пытаемся распарсить строку как Key
+                var key = (Key)Enum.Parse(typeof(Key), keyString, true);
+                return Enum.IsDefined(typeof(Key), key);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        static bool IsValidModifiers(string modifiersString, out ModifierKeys modifiers)
+        {
+            modifiers = ModifierKeys.None;
+
+            if (string.IsNullOrEmpty(modifiersString))
+                return true;
+
+            try
+            {
+                var parts = modifiersString.Split('+');
+                foreach (var part in parts)
+                {
+                    var trimmedPart = part.Trim();
+                    if (string.IsNullOrEmpty(trimmedPart))
+                        continue;
+
+                    switch (trimmedPart.ToLower())
+                    {
+                        case "control": modifiers |= ModifierKeys.Control; break;
+                        case "ctrl": modifiers |= ModifierKeys.Control; break;
+                        case "alt": modifiers |= ModifierKeys.Alt; break;
+                        case "shift": modifiers |= ModifierKeys.Shift; break;
+                        case "win": modifiers |= ModifierKeys.Windows; break;
+                        case "windows": modifiers |= ModifierKeys.Windows; break;
+                        default: return false; // Неизвестный модификатор
+                    }
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
             }
         }
 
@@ -399,65 +523,20 @@ namespace SoZvon.UI.Room_Pages
 
             return modifiers;
         }
-
-        public void DeleteSetting(string id)
-        {
-            lock (lockOperations)
-            {
-                var element = xmlDocument.Root?.Element(id);
-                element?.Remove();
-                SaveXml(xmlDocument);
-            }
-        }
-        public void ClearAllSettings()
-        {
-            lock (lockOperations)
-            {
-                // Сбрасываем обычные настройки к дефолтным значениям
-                foreach (var setting in defaultSettings)
-                {
-                    var element = xmlDocument.Root?.Element(setting.Key);
-                    if (element != null)
-                    {
-                        element.Value = setting.Value;
-                    }
-                }
-
-                // Сбрасываем горячие клавиши к дефолтным значениям
-                xmlDocument.Root?.Element("Hotkeys")?.Remove();
-
-                // Создаем новый элемент с дефолтными горячими клавишами
-                var newHotkeysElement = new XElement("Hotkeys");
-                foreach (var hotkey in defaultHotkeys)
-                {
-                    newHotkeysElement.Add(new XElement(hotkey.Key,
-                        new XElement("Key", hotkey.Value.Item1.ToString()),
-                        new XElement("Modifiers", ModifiersToString(hotkey.Value.Item2)),
-                        new XElement("Capture", hotkey.Value.Item3.ToString().ToLower())
-                    ));
-                }
-
-                xmlDocument.Root?.Add(newHotkeysElement);
-                SaveXml(xmlDocument);
-            }
-        }
-
-        // Добавляем метод для получения дефолтных значений
-        public string GetDefaultSetting(string id)
-        {
-            return defaultSettings.TryGetValue(id, out var value) ? value : "";
-        }
-        public Tuple<Key, ModifierKeys, bool> GetDefaultHotkey(string id)
-        {
-            return defaultHotkeys.TryGetValue(id, out var value) ? value : new(Key.None, ModifierKeys.None, true);
-        }
     }
     public class SettingsService(ISettingsPage settingsPage) : ISettingsService
     {
         readonly ISettingsPage settingsPage = settingsPage;
+
+        readonly GlobalHotKeyManager hotKeyManager = new();
         readonly XmlSettingsRepository saveRepository = new();
+
         readonly Dictionary<string, ISetting> currentSettings = [];
         readonly Dictionary<string, ISetting> lastSettings = [];
+
+        readonly Dictionary<string, string> defaultSettings = [];
+        readonly Dictionary<string, Tuple<Key, ModifierKeys, bool>> defaultHotkeys = [];
+
         readonly ReaderWriterLockSlim settingsLock = new();
 
         bool isLoading = false;
@@ -470,6 +549,13 @@ namespace SoZvon.UI.Room_Pages
             {
                 LoadSettings();
                 LoadUI();
+
+                var hotkeys = currentSettings.Values.OfType<IHotkeySettings>().ToList();
+                
+                hotKeyManager.ClearAndAddRangeHotkey(hotkeys);
+
+                _ = hotKeyManager.ReadKeysAsync();
+                hotKeyManager.StartChecking();
             }
             finally
             {
@@ -480,37 +566,28 @@ namespace SoZvon.UI.Room_Pages
         {
             isLoading = true;
 
-            var themeDefault = saveRepository.GetDefaultSetting("Theme");
-            var microphonesDefault = saveRepository.GetDefaultSetting("Microphones");
-            var notifyAppDefault = bool.Parse(saveRepository.GetDefaultSetting("NotifyApp"));
-            var serverAutoConnectDefault = bool.Parse(saveRepository.GetDefaultSetting("ServerAutoConnect"));
+            // Назначение настроек по умолчанию
+            AddDefaultValueSetting("Theme", "light");
+            AddDefaultValueSetting("Microphones", "auto");
+            AddDefaultValueSetting("NotifyApp", "false");
+            AddDefaultValueSetting("ServerAutoConnect", "false");
 
-            // Загрузка обычных настроек с использованием дефолтных значений из репозитория
-            var theme = saveRepository.GetSetting("Theme", themeDefault);
-            var microphones = saveRepository.GetSetting("Microphones", microphonesDefault);
-            var notifyApp = bool.Parse(saveRepository.GetSetting("NotifyApp", saveRepository.GetDefaultSetting("NotifyApp")));
-            var serverAutoConnect = bool.Parse(saveRepository.GetSetting("ServerAutoConnect", saveRepository.GetDefaultSetting("ServerAutoConnect")));
+            AddDefaultValueHotkeySetting("MicToggle", new(Key.M, ModifierKeys.Control, false));
+            AddDefaultValueHotkeySetting("ExitApp", new(Key.Q, ModifierKeys.Control | ModifierKeys.Alt, true));
+            AddDefaultValueHotkeySetting("Reconnect", new(Key.A, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt, true));
+
+            saveRepository.StartProperties(defaultSettings.ToDictionary(), defaultHotkeys.ToDictionary());
 
             // Создание объектов настроек
-            currentSettings["Theme"] = new ComboBoxSetting("Theme", "Тема оформления", theme, themeDefault, new() { ["light"] = "Светлая", ["dark"] = "Темная" });
-            currentSettings["Microphones"] = new ComboBoxSetting("Microphones", "Микрофон", microphones, microphonesDefault, new() { ["auto"] = "По умолчанию" });
+            MakeFastComboBoxSetting("Theme", "Тема оформления", new() { ["light"] = "Светлая", ["dark"] = "Темная" });
+            MakeFastComboBoxSetting("Microphones", "Микрофон", new() { ["auto"] = "По умолчанию" });
 
-            currentSettings["NotifyApp"] = new CheckboxSetting("NotifyApp", "Включить уведомления", notifyApp, notifyAppDefault);
-            currentSettings["ServerAutoConnect"] = new CheckboxSetting("ServerAutoConnect", "Автоподключение к серверу", serverAutoConnect, serverAutoConnectDefault);
+            MakeFastCheckBoxSetting("NotifyApp", "Включить уведомления");
+            MakeFastCheckBoxSetting("ServerAutoConnect", "Автоподключение к серверу");
 
-            // Загрузка горячих клавиш с использованием дефолтных значений
-            var micToggleDefault = saveRepository.GetDefaultHotkey("MicToggle");
-            var exitAppDefault = saveRepository.GetDefaultHotkey("ExitApp");
-            var autoConnectDefault = saveRepository.GetDefaultHotkey("AutoConnect");
-
-            var micToggleHK = saveRepository.GetHotkey("MicToggle");
-            var exitAppHK = saveRepository.GetHotkey("ExitApp");
-            var autoConnectHK = saveRepository.GetHotkey("AutoConnect");
-
-            // Создание объектов горячих клавиш с дефолтными значениями
-            currentSettings["MicToggle"] = new HotkeySetting("MicToggle", "Вкл/Выкл микрофон", micToggleHK, micToggleDefault);
-            currentSettings["ExitApp"] = new HotkeySetting("ExitApp", "Выход из приложения", exitAppHK, exitAppDefault);
-            currentSettings["AutoConnect"] = new HotkeySetting("AutoConnect", "Переподключиться к серверу", autoConnectHK, autoConnectDefault);
+            MakeFastHotkeySetting("MicToggle", "Вкл/Выкл микрофон");
+            MakeFastHotkeySetting("ExitApp", "Выход из приложения");
+            MakeFastHotkeySetting("Reconnect", "Переподключиться к серверу");
 
             SaveCurrentStates();
             CheckForDuplicateHotkeys(); // Проверяем дубликаты после загрузки
@@ -518,6 +595,46 @@ namespace SoZvon.UI.Room_Pages
             isLoading = false;
         }
         void LoadUI() => settingsPage.MakeSettingsUI([.. currentSettings.Values]);
+
+        void AddDefaultValueSetting(string id, string defaultValue)
+        {
+            defaultSettings[id] = defaultValue;
+        }
+        void AddDefaultValueHotkeySetting(string id, Tuple<Key, ModifierKeys, bool> defaultValue)
+        {
+            defaultHotkeys[id] = defaultValue;
+        }
+
+        public string GetDefaultSetting(string id)
+        {
+            return defaultSettings.TryGetValue(id, out var value) ? value : "";
+        }
+        public Tuple<Key, ModifierKeys, bool> GetDefaultHotkey(string id)
+        {
+            return defaultHotkeys.TryGetValue(id, out var value) ? value : new(Key.None, ModifierKeys.None, true);
+        }
+
+        void MakeFastComboBoxSetting(string id, string description, Dictionary<string, string> values)
+        {
+            var defaultValue = GetDefaultSetting(id);
+            var value = saveRepository.GetSetting(id, defaultValue);
+
+            currentSettings[id] = new ComboBoxSetting(id, description, value, defaultValue, values);
+        }
+        void MakeFastCheckBoxSetting(string id, string description)
+        {
+            var defaultValue = GetDefaultSetting(id);
+            var value = saveRepository.GetSetting(id, defaultValue);
+
+            currentSettings[id] = new CheckboxSetting(id, description, bool.Parse(value), bool.Parse(defaultValue));
+        }
+        void MakeFastHotkeySetting(string id, string description)
+        {
+            var defaultValue = GetDefaultHotkey(id);
+            var value = saveRepository.GetHotkey(id);
+
+            currentSettings[id] = new HotkeySetting(id, description, value, defaultValue, this);
+        }
 
         public void ChangeHasInvalidKey(bool value)
         {
@@ -620,6 +737,7 @@ namespace SoZvon.UI.Room_Pages
         void SaveCurrentStates()
         {
             lastSettings.Clear();
+
             foreach (var pair in currentSettings)
             {
                 lastSettings[pair.Key] = CloneSetting(pair.Value);
@@ -658,15 +776,19 @@ namespace SoZvon.UI.Room_Pages
                 if (!HasChanges())
                     return (false, "Настройки соответствуют сохраненным");
 
+                List<IHotkeySettings> hotkeys = [];
+
                 foreach (var setting in currentSettings.Values)
                 {
                     setting.SaveCurrentState();
                     SaveSettingToRepository(setting);
+
+                    if (setting is IHotkeySettings hotkey)
+                        hotkeys.Add(hotkey);
                 }
 
-                // Добавить интеграцию с 
-
                 SaveCurrentStates();
+                hotKeyManager.ClearAndAddRangeHotkey(hotkeys);
 
                 return (true, string.Empty);
             }
@@ -719,6 +841,19 @@ namespace SoZvon.UI.Room_Pages
             finally
             {
                 settingsLock.ExitWriteLock();
+            }
+        }
+
+        public void OnHotkeyPressed(string Id, bool OldUseFormCapture)
+        {
+            settingsLock.EnterReadLock();
+            try
+            {
+                settingsPage.OnHotkeyPressed(Id, OldUseFormCapture);
+            }
+            finally
+            {
+                settingsLock.ExitReadLock();
             }
         }
 
@@ -846,11 +981,22 @@ namespace SoZvon.UI.Room_Pages
                 }
             }
         }
-        public void OnHotkeyPressed(IHotkeySettings setting, bool oldUseFormCapture)
+        public void OnHotkeyPressed(string id)
         {
-            // Реализация обработки горячих клавиш
-            // Этот метод должен быть вызван из GlobalHotKeyManager
-            //Console.WriteLine($"Hotkey pressed: {setting.Description}");
+            switch (id)
+            {
+                case "ExitApp": 
+                    settingsPage.CloseApplication();
+                    break;
+                case "Reconnect":
+                    settingsPage.ReloadConnectionServ();
+                    break;
+                case "MicToggle":
+                    MessageBox.Show($"Hotkey pressed: {id}");
+                    break;
+                default:
+                    throw new Exception("WTF");
+            }
         }
 
         bool CheckIfHotkeyExists(Key key, ModifierKeys modifiers, string currentId)

@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Configuration;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -99,13 +100,14 @@ namespace SoZvon.UI.Room_Pages
     public interface IHotkeySettings
     {
         string Id { get; }
-        string Description { get; }
         Key OldKey { get; }
         ModifierKeys OldModifiers { get; }
         void OnHotkeyPressed();
     }
     public class HotkeySetting: SettingBase, IHotkeySettings
     {
+        readonly ISettingsService settingsService;
+
         public bool IsDuplicate { get; set; } = false;
 
         public Key Key { get; set; }
@@ -134,8 +136,10 @@ namespace SoZvon.UI.Room_Pages
             DefaultKey = hotkeySetting.DefaultKey;
             DefaultModifiers = hotkeySetting.DefaultModifiers;
             DefaultUseFormCapture = hotkeySetting.DefaultUseFormCapture;
+
+            settingsService = hotkeySetting.settingsService;
         }
-        public HotkeySetting(string id, string description, Tuple<Key, ModifierKeys, bool> _current, Tuple<Key, ModifierKeys, bool> _default) : base(id, description)
+        public HotkeySetting(string id, string description, Tuple<Key, ModifierKeys, bool> _current, Tuple<Key, ModifierKeys, bool> _default, ISettingsService _settingsService) : base(id, description)
         {
             Key = _current.Item1;
             Modifiers = _current.Item2;
@@ -148,6 +152,8 @@ namespace SoZvon.UI.Room_Pages
             DefaultKey = _default.Item1;
             DefaultModifiers = _default.Item2;
             DefaultUseFormCapture = _default.Item3;
+
+            settingsService = _settingsService;
         }
 
 
@@ -178,6 +184,7 @@ namespace SoZvon.UI.Room_Pages
         public void OnHotkeyPressed()
         {
             // Реализация будет в конкретном классе-обработчике
+            settingsService.OnHotkeyPressed(Id, OldUseFormCapture);
         }
     }
 
@@ -468,7 +475,8 @@ namespace SoZvon.UI.Room_Pages
         void SelectMicrophoneByName(string name);
         void ReloadConnectionServ();
         void CloseApplication();
-        bool IsWindowFocused();
+
+        void OnHotkeyPressed(string Id, bool UseFormCapture);
 
         void UpdateSetting<T>(string id, T value);
         void ChangeHasInvalidKey(bool value);
@@ -489,9 +497,6 @@ namespace SoZvon.UI.Room_Pages
             settingsService = new SettingsService(this);
             
             settingsService.StartSettings();
-
-            // Запуск обработки горячих клавиш
-            //_ = hotKeyManager.ReadKeysAsync();
         }
 
         public void UpdateSetting<T>(string id, T value) => settingsService.UpdateSetting<T>(id, value);
@@ -515,7 +520,13 @@ namespace SoZvon.UI.Room_Pages
             });
         }
 
-        public bool IsWindowFocused() => mainWindow.IsWindowFocused();
+        public void OnHotkeyPressed(string Id, bool UseFormCapture)
+        {
+            if (UseFormCapture && !mainWindow.IsWindowFocused())
+                return;
+
+            mainWindow.MakeAction_Form(() => settingsUIManager.OnHotkeyPressed(Id));
+        }
 
         void SaveButton_Click(object sender, RoutedEventArgs e)
         {
