@@ -1,150 +1,200 @@
-﻿using SoZvon.ClientSettingsManager;
-using System.Collections.Frozen;
-using System.Runtime.InteropServices;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Navigation;
-using Keys = System.Windows.Forms.Keys;
 
 namespace SoZvon.UI.Room_Pages
 {
-    public class GlobalHotKeyManager
-    {
-        [DllImport("user32.dll")] static extern short GetAsyncKeyState(Keys vkey);
-
-        readonly Dictionary<string, IHotkeySettings> currentKeys = [];
-        readonly CancellationToken cts = new();
-        readonly object currentKeys_lock = new();
-
-        bool NeedCheck = false;
-
-        public void AddorUpdateHotkey(IHotkeySettings hotkeySettings)
-        {
-            lock (currentKeys_lock)
-                currentKeys[hotkeySettings.Id] = hotkeySettings;
-        }
-        public async Task ReadKeysAsync()
-        {
-            try
-            {
-                while (!cts.IsCancellationRequested)
-                {
-                    lock (currentKeys_lock)
-                    {
-                        if (NeedCheck)
-                        {
-                            foreach (IHotkeySettings value in currentKeys.Values)
-                            {
-                                if (!IsKeyCombinationPressed(value.OldKey, value.OldModifiers))
-                                    continue;
-
-                                value.OnHotkeyPressed();
-                            }
-                        }
-                    }
-
-                    await Task.Delay(100, cts);
-                }
-            }
-            catch { }
-        }
-
-        static bool IsKeyPressed(Keys key)
-        {
-            short state = GetAsyncKeyState(key);
-            return (state & 0x8000) != 0;
-        }
-        static bool IsKeyCombinationPressed(Key key, ModifierKeys modifiers)
-        {
-            // Проверяем что нажаты именно те модификаторы, которые требуются
-            if (modifiers.HasFlag(ModifierKeys.Control) != IsKeyPressed(Keys.ControlKey)) 
-                return false;
-            if (modifiers.HasFlag(ModifierKeys.Shift) != IsKeyPressed(Keys.ShiftKey)) 
-                return false;
-            if (modifiers.HasFlag(ModifierKeys.Alt) != IsKeyPressed(Keys.Menu)) 
-                return false;
-            if (modifiers.HasFlag(ModifierKeys.Windows) != (IsKeyPressed(Keys.LWin) || IsKeyPressed(Keys.RWin))) 
-                return false;
-
-            // Проверяем основную клавишу
-            return IsKeyPressed((Keys)KeyInterop.VirtualKeyFromKey(key));
-        }
-
-        public void StartChecking()
-        {
-            lock (currentKeys_lock)
-                NeedCheck = true;
-        }
-        public void StopChecking()
-        {
-            lock (currentKeys_lock)
-                NeedCheck = false;
-        }
-    }
-
     public interface ISetting
     {
         string Id { get; }
         string Description { get; }
-        string DefaultValue { get; }
+
         bool HasChanges();
         bool HasChangesDefaultSettings();
 
         void ResetToOriginal();
         void ResetToDefault();
         void SaveCurrentState();
-        void UpdateUI();
-        StackPanel CreateUI();
     }
-    public class ComboBoxSetting(string id, string description, string defaultValue, Dictionary<string, string> options, ISettingsUIManager settingsUIManager) : ISetting
+    public abstract class SettingBase(string id, string description) : ISetting
     {
-        readonly ISettingsUIManager settingsUIManager = settingsUIManager;
-
         public string Id { get; } = id;
         public string Description { get; } = description;
-        public string DefaultValue { get; } = defaultValue;
 
-        public string SelectedValue { get; set; } = defaultValue;
-        public string OldSelectedValue { get; set; } = defaultValue;
+        public abstract bool HasChanges();
+        public abstract bool HasChangesDefaultSettings();
 
-        public Dictionary<string, string> Options { get; private set; } = options;
-        public ComboBox ComboBoxUI { get; set; } = null!;
+        public abstract void ResetToOriginal();
+        public abstract void ResetToDefault();
+        public abstract void SaveCurrentState();
+    }
+    public class ComboBoxSetting : SettingBase
+    {
+        public string SelectedValue { get; set; }
+        public string OldSelectedValue { get; set; }
+        public string DefaultSelectedValue { get; set; }
 
-        public ComboBoxSetting(string id, string description, string defaultValue, Dictionary<string, string> options, ComboBox comboBoxUI, ISettingsUIManager settingsUIManager) : this(id, description, defaultValue, options, settingsUIManager)
+        public Dictionary<string, string> Options { get; private set; }
+
+        public ComboBoxSetting(ComboBoxSetting comboboxSetting) : base(comboboxSetting.Id, comboboxSetting.Description)
         {
-            ComboBoxUI = comboBoxUI;
+            SelectedValue = comboboxSetting.SelectedValue;
+            OldSelectedValue = comboboxSetting.OldSelectedValue;
+            DefaultSelectedValue = comboboxSetting.DefaultSelectedValue;
+            Options = comboboxSetting.Options;
+        }
+        public ComboBoxSetting(string id, string description, string currentValue, string defaultValue, Dictionary<string, string> options) : base(id, description)
+        {
+            SelectedValue = currentValue;
+            OldSelectedValue = currentValue;
+            DefaultSelectedValue = defaultValue;
+            Options = options;
         }
 
-        public bool HasChanges() => SelectedValue != OldSelectedValue;
-        public bool HasChangesDefaultSettings() => SelectedValue != DefaultValue;
+        public override bool HasChanges() => SelectedValue != OldSelectedValue;
+        public override bool HasChangesDefaultSettings() => SelectedValue != DefaultSelectedValue;
 
-        public void ResetToOriginal() => SelectedValue = OldSelectedValue;
-        public void ResetToDefault() => SelectedValue = DefaultValue;
-        public void SaveCurrentState()
+        public override void ResetToOriginal() => SelectedValue = OldSelectedValue;
+        public override void ResetToDefault() => SelectedValue = DefaultSelectedValue;
+        public override void SaveCurrentState()
         {
-            if(!OldSelectedValue.Equals(SelectedValue))
-                settingsUIManager.ComboBox_OnSelectionChanged(this, SelectedValue);
+            if (OldSelectedValue.Equals(SelectedValue))
+                return;
 
             OldSelectedValue = SelectedValue;
         }
 
-        public void UpdateUI()
+        public void ChangeComboboxValues(Dictionary<string, string> values)
         {
-            if (ComboBoxUI is null)
-                return;
-
-            // Устанавливаем выбранный элемент
-            foreach (ComboBoxItem item in ComboBoxUI.Items)
-            {
-                if (item.Tag?.ToString() == SelectedValue)
-                {
-                    ComboBoxUI.SelectedItem = item;
-                    break;
-                }
-            }
+            Options = new Dictionary<string, string>(values);
         }
+    }
+    public class CheckboxSetting : SettingBase
+    {
+        public bool IsChecked { get; set; }
+        public bool OldIsChecked { get; set; }
+        public bool DefaultIsChecked { get; set; }
+
+        public CheckboxSetting(CheckboxSetting checkboxSetting) : base(checkboxSetting.Id, checkboxSetting.Description)
+        {
+            IsChecked = checkboxSetting.IsChecked;
+            OldIsChecked = checkboxSetting.OldIsChecked;
+            DefaultIsChecked = checkboxSetting.DefaultIsChecked;
+        }
+        public CheckboxSetting(string id, string description, bool currentValue, bool defaultValue) : base(id, description)
+        {
+            IsChecked = currentValue;
+            OldIsChecked = currentValue;
+            DefaultIsChecked = defaultValue;
+        }
+
+        public override bool HasChanges() => IsChecked != OldIsChecked;
+        public override bool HasChangesDefaultSettings() => IsChecked != DefaultIsChecked;
+
+        public override void ResetToOriginal() => IsChecked = OldIsChecked;
+        public override void ResetToDefault() => IsChecked = DefaultIsChecked;
+        public override void SaveCurrentState() => OldIsChecked = IsChecked;
+    }
+    public interface IHotkeySettings
+    {
+        string Id { get; }
+        string Description { get; }
+        Key OldKey { get; }
+        ModifierKeys OldModifiers { get; }
+        void OnHotkeyPressed();
+    }
+    public class HotkeySetting: SettingBase, IHotkeySettings
+    {
+        public bool IsDuplicate { get; set; } = false;
+
+        public Key Key { get; set; }
+        public ModifierKeys Modifiers { get; set; }
+        public bool UseFormCapture { get; set; }
+
+        public Key OldKey { get; set; }
+        public ModifierKeys OldModifiers { get; set; }
+        public bool OldUseFormCapture { get; set; }
+
+        public Key DefaultKey { get; set; }
+        public ModifierKeys DefaultModifiers { get; set; }
+        public bool DefaultUseFormCapture { get; }
+
+
+        public HotkeySetting(HotkeySetting hotkeySetting) : base(hotkeySetting.Id, hotkeySetting.Description)
+        {
+            Key = hotkeySetting.Key;
+            Modifiers = hotkeySetting.Modifiers;
+            UseFormCapture = hotkeySetting.UseFormCapture;
+
+            OldKey = hotkeySetting.OldKey;
+            OldModifiers = hotkeySetting.OldModifiers;
+            OldUseFormCapture = hotkeySetting.OldUseFormCapture;
+
+            DefaultKey = hotkeySetting.DefaultKey;
+            DefaultModifiers = hotkeySetting.DefaultModifiers;
+            DefaultUseFormCapture = hotkeySetting.DefaultUseFormCapture;
+        }
+        public HotkeySetting(string id, string description, Tuple<Key, ModifierKeys, bool> _current, Tuple<Key, ModifierKeys, bool> _default) : base(id, description)
+        {
+            Key = _current.Item1;
+            Modifiers = _current.Item2;
+            UseFormCapture = _current.Item3;
+
+            OldKey = _current.Item1;
+            OldModifiers = _current.Item2;
+            OldUseFormCapture = _current.Item3;
+
+            DefaultKey = _default.Item1;
+            DefaultModifiers = _default.Item2;
+            DefaultUseFormCapture = _default.Item3;
+        }
+
+
+        public override bool HasChanges() => Key != OldKey || Modifiers != OldModifiers || UseFormCapture != OldUseFormCapture;
+        public override bool HasChangesDefaultSettings() => Key != DefaultKey || Modifiers != DefaultModifiers || UseFormCapture != DefaultUseFormCapture;
+
+        public override void ResetToOriginal()
+        {
+            Key = OldKey;
+            Modifiers = OldModifiers;
+            UseFormCapture = OldUseFormCapture;
+            IsDuplicate = false;
+        }
+        public override void ResetToDefault()
+        {
+            Key = DefaultKey;
+            Modifiers = DefaultModifiers;
+            UseFormCapture = DefaultUseFormCapture;
+            IsDuplicate = false;
+        }
+        public override void SaveCurrentState()
+        {
+            OldKey = Key;
+            OldModifiers = Modifiers;
+            OldUseFormCapture = UseFormCapture;
+        }
+
+        public void OnHotkeyPressed()
+        {
+            // Реализация будет в конкретном классе-обработчике
+        }
+    }
+
+    public interface ISettingUI
+    {
+        string GetID();
+        void UpdateUI();
+        StackPanel CreateUI();
+    }
+    public class ComboBoxSettingUI(ComboBoxSetting setting, ISettingsUIManager uiManager) : ISettingUI
+    {
+        readonly ComboBoxSetting setting = setting;
+        readonly ISettingsUIManager uiManager = uiManager;
+        public ComboBox ComboBoxUI { get; private set; } = null!;
+
+        public string GetID() => setting.Id;
+
         public StackPanel CreateUI()
         {
             var stackPanel = new StackPanel
@@ -153,17 +203,15 @@ namespace SoZvon.UI.Room_Pages
                 Margin = new Thickness(0, 10, 0, 10)
             };
 
-            // Текст с описанием
             var textBlock = new TextBlock
             {
                 FontFamily = new FontFamily("Comic Sans MS"),
                 FontSize = 14,
-                Text = Description + ":",
+                Text = setting.Description + ":",
                 Margin = new Thickness(0, 0, 0, 5),
                 FontWeight = FontWeights.Bold
             };
 
-            // ComboBox с опциями
             var comboBox = new ComboBox
             {
                 FontFamily = new FontFamily("Comic Sans MS"),
@@ -171,55 +219,57 @@ namespace SoZvon.UI.Room_Pages
                 MinWidth = 176,
                 MaxWidth = 300,
                 HorizontalAlignment = HorizontalAlignment.Left,
-                Tag = Id
+                Tag = setting.Id
             };
-
-            // Заполняем опции
-            UpdateValuesUI(comboBox, Options);
-
-            // Обработчик изменения выбора
             comboBox.SelectionChanged += ComboBox_SelectionChanged;
 
             ComboBoxUI = comboBox;
+
+            UpdateValuesUI(setting.Options);
 
             stackPanel.Children.Add(textBlock);
             stackPanel.Children.Add(comboBox);
 
             return stackPanel;
         }
-        public void UpdateValuesUI(ComboBox comboBox, Dictionary<string, string> values)
+        public void UpdateUI()
         {
-            if (comboBox is null)
+            if (ComboBoxUI is null)
                 return;
 
-            comboBox.Items.Clear();
+            foreach (ComboBoxItem item in ComboBoxUI.Items)
+            {
+                if (item.Tag?.ToString() == setting.SelectedValue)
+                {
+                    ComboBoxUI.SelectedItem = item;
+                    break;
+                }
+            }
+        }
+        public void UpdateValuesUI(Dictionary<string, string> values)
+        {
+            if (ComboBoxUI is null)
+                return;
 
-            // Устанавливаем выбранный элемент
+            ComboBoxUI.Items.Clear();
+
             foreach (var option in values)
             {
                 var item = new ComboBoxItem
                 {
-                    Content = option.Value, // Отображаемое имя
-                    Tag = option.Key,       // Внутреннее значение
+                    Content = option.Value,
+                    Tag = option.Key,
                     FontFamily = new FontFamily("Comic Sans MS"),
                     FontSize = 14
                 };
 
-                comboBox.Items.Add(item);
+                ComboBoxUI.Items.Add(item);
 
-                // Устанавливаем выбранный элемент по умолчанию
-                if (option.Key == SelectedValue)
+                if (option.Key == setting.SelectedValue)
                 {
-                    comboBox.SelectedItem = item;
+                    ComboBoxUI.SelectedItem = item;
                 }
             }
-        }
-
-        public void ChangeComboboxValues(Dictionary<string, string> values)
-        {
-            Options = new Dictionary<string, string>(values);
-
-            UpdateValuesUI(ComboBoxUI, values);
         }
 
         void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -227,45 +277,23 @@ namespace SoZvon.UI.Room_Pages
             if (sender is not ComboBox comboBox || comboBox.SelectedItem is not ComboBoxItem selectedItem)
                 return;
 
-            SelectedValue = selectedItem.Tag?.ToString() ?? string.Empty;
+            uiManager.ComboBox_OnSelectionChanged(setting.Id, selectedItem.Tag?.ToString() ?? string.Empty);
         }
     }
-    public class CheckboxSetting(string id, string description, bool isChecked, ISettingsUIManager settingsUIManager) : ISetting
+    public class CheckboxSettingUI(CheckboxSetting setting, ISettingsUIManager uiManager) : ISettingUI
     {
-        readonly ISettingsUIManager settingsUIManager = settingsUIManager;
+        readonly CheckboxSetting setting = setting;
+        readonly ISettingsUIManager uiManager = uiManager;
+        public CheckBox CheckBoxUI { get; private set; } = null!;
 
-        public string Id { get; } = id;
-        public string Description { get; } = description;
-
-        public bool IsChecked { get; set; } = isChecked;
-        public bool OldIsChecked { get; set; } = isChecked;
-        public string DefaultValue { get; } = ToStringRepresentation(isChecked);
-
-        public CheckBox CheckBoxUI { get; set; } = null!;
-
-        public CheckboxSetting(string id, string description, bool isChecked, CheckBox checkBoxUI, ISettingsUIManager settingsUIManager) : this(id, description, isChecked, settingsUIManager)
-        {
-            CheckBoxUI = checkBoxUI;
-        }
-
-        public bool HasChanges() => IsChecked != OldIsChecked;
-        public bool HasChangesDefaultSettings() => IsChecked != ParseStringRepresentation(DefaultValue);
-
-        public void ResetToOriginal() => IsChecked = OldIsChecked;
-        public void SaveCurrentState() => OldIsChecked = IsChecked;
-        public void ResetToDefault()
-        {
-            IsChecked = DefaultValue.Equals("включено", StringComparison.CurrentCultureIgnoreCase) ||
-                        DefaultValue.Equals("true", StringComparison.CurrentCultureIgnoreCase) ||
-                        DefaultValue == "1";
-        }
+        public string GetID() => setting.Id;
 
         public void UpdateUI()
         {
             if (CheckBoxUI is null)
                 return;
 
-            CheckBoxUI.IsChecked = IsChecked;
+            CheckBoxUI.IsChecked = setting.IsChecked;
         }
         public StackPanel CreateUI()
         {
@@ -279,9 +307,9 @@ namespace SoZvon.UI.Room_Pages
             {
                 FontFamily = new FontFamily("Comic Sans MS"),
                 FontSize = 14,
-                Content = Description,
-                IsChecked = IsChecked,
-                Tag = Id,
+                Content = setting.Description,
+                IsChecked = setting.IsChecked,
+                Tag = setting.Id,
                 Margin = new Thickness(0, 0, 5, 0)
             };
 
@@ -289,7 +317,6 @@ namespace SoZvon.UI.Room_Pages
             checkBox.Unchecked += CheckBox_Changed;
 
             CheckBoxUI = checkBox;
-
             stackPanel.Children.Add(checkBox);
 
             return stackPanel;
@@ -300,100 +327,28 @@ namespace SoZvon.UI.Room_Pages
             if (sender is not CheckBox checkBox)
                 return;
 
-            IsChecked = checkBox.IsChecked is true;
+            uiManager.CheckBox_Changed(setting.Id, checkBox.IsChecked == true);
         }
-
-        static bool ParseStringRepresentation(string defaultValue) => defaultValue.Equals("Включено", StringComparison.OrdinalIgnoreCase);
-        static string ToStringRepresentation(bool isChecked) => isChecked ? "Включено" : "Выключено";
     }
-    public interface IHotkeySettings
+    public class HotkeySettingUI(HotkeySetting Setting, ISettingsUIManager uiManager) : ISettingUI
     {
-        string Id { get; }
-        string Description { get; }
-        Key OldKey { get; }
-        ModifierKeys OldModifiers { get; }
+        HotkeySetting Setting { get; } = Setting;
+        readonly ISettingsUIManager uiManager = uiManager;
 
-        void OnHotkeyPressed();
-    }
-    public class HotkeySetting(string id, string description, Key key, ModifierKeys modifiers, ISettingsUIManager settingsUIManager, bool useFormCapture = true) : ISetting, IHotkeySettings
-    {
-        readonly ISettingsUIManager settingsUIManager = settingsUIManager;
+        public Button ButtonUI { get; private set; } = null!;
+        public CheckBox CaptureModeCheckBox { get; private set; } = null!;
+        public TextBlock CaptureModeLabel { get; private set; } = null!;
 
-        public string Id { get; } = id;
-        public string Description { get; } = description;
-        public bool IsDuplicate { get; set; } = false;
-        public string DefaultValue { get; } = ToStringRepresentation(key, modifiers);
-        public bool DefaultUseFormCapture { get; } = useFormCapture;
-
-        public Key Key { get; set; } = key;
-        public ModifierKeys Modifiers { get; set; } = modifiers;
-        public bool UseFormCapture { get; set; } = useFormCapture;
-
-        public Key OldKey { get; set; } = key;
-        public ModifierKeys OldModifiers { get; set; } = modifiers;
-        public bool OldUseFormCapture { get; set; } = useFormCapture;
-
-        public Button ButtonUI { get; set; } = null!;
-        public CheckBox CaptureModeCheckBox { get; set; } = null!;
-        public TextBlock CaptureModeLabel { get; set; } = null!;
-
-        public HotkeySetting(string id, string description, Key key, ModifierKeys modifiers, Button buttonUI, CheckBox captureModeCheckBox, ISettingsUIManager settingsUIManager, bool useFormCapture = true) : this(id, description, key, modifiers, settingsUIManager, useFormCapture)
-        {
-            ButtonUI = buttonUI;
-            CaptureModeCheckBox = captureModeCheckBox;
-        }
-
-        public bool HasChanges() => Key != OldKey || Modifiers != OldModifiers || UseFormCapture != OldUseFormCapture;
-        public bool HasChangesDefaultSettings()
-        {
-            var (key, modifiers) = ParseHotkey(DefaultValue);
-
-            return Key != key || Modifiers != modifiers || UseFormCapture != DefaultUseFormCapture;
-        }
-
-        public void ResetToOriginal()
-        {
-            Key = OldKey;
-            Modifiers = OldModifiers;
-            UseFormCapture = OldUseFormCapture;
-            IsDuplicate = false;
-            UpdateUI();
-        }
-        public void ResetToDefault()
-        {
-            var (defaultKey, defaultModifiers) = ParseHotkey(DefaultValue);
-            Key = defaultKey;
-            Modifiers = defaultModifiers;
-            UseFormCapture = DefaultUseFormCapture;
-            IsDuplicate = false;
-            UpdateUI();
-        }
-        public void SaveCurrentState()
-        {
-            OldKey = Key;
-            OldModifiers = Modifiers;
-            OldUseFormCapture = UseFormCapture;
-        }
-
-        public void OnHotkeyPressed() { }//settingsManager.OnHotkeyPressed(this, OldUseFormCapture);
+        public string GetID() => Setting.Id;
 
         public void UpdateUI()
         {
-            if (ButtonUI is not null)
-            {
-                ButtonUI.Content = ToStringRepresentation(Key, Modifiers);
+            HighlightButton();
 
-                if (IsDuplicate)
-                {
-                    HighlightButton(false);
-                }
-                else ResetButtonAppearance();
-            }
-
-            if (CaptureModeCheckBox is not null && CaptureModeLabel is not null)
+            if (CaptureModeCheckBox != null && CaptureModeLabel != null)
             {
-                CaptureModeCheckBox.IsChecked = UseFormCapture;
-                CaptureModeLabel.Text = UseFormCapture ? "Только в приложении" : "В системе";
+                CaptureModeCheckBox.IsChecked = Setting.UseFormCapture;
+                CaptureModeLabel.Text = Setting.UseFormCapture ? "Только в приложении" : "В системе";
             }
         }
         public StackPanel CreateUI()
@@ -404,36 +359,35 @@ namespace SoZvon.UI.Room_Pages
                 HorizontalAlignment = HorizontalAlignment.Left,
                 Margin = new Thickness(0, 5, 0, 5)
             };
-
             var textBlock = new TextBlock
             {
                 FontFamily = new FontFamily("Comic Sans MS"),
                 FontSize = 14,
-                Text = Description + ":",
+                Text = Setting.Description + ":",
                 VerticalAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(0, 0, 15, 0),
             };
-
             var button = new Button
             {
                 FontFamily = new FontFamily("Comic Sans MS"),
                 FontSize = 14,
-                Tag = Id,
+                Tag = Setting.Id,
+                Background = new SolidColorBrush(Colors.White),
                 Padding = new Thickness(20, 0, 20, 0),
-                HorizontalAlignment = HorizontalAlignment.Left
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Content = ToStringRepresentation(Setting.Key, Setting.Modifiers)
             };
-
             var checkBox = new CheckBox
             {
                 VerticalContentAlignment = VerticalAlignment.Center,
                 Margin = new Thickness(10, 0, 2, 0),
                 Width = 20,
-                Height = 20
+                Height = 20,
+                IsChecked = Setting.UseFormCapture
             };
-
             var checkBoxLabel = new TextBlock
             {
-                Text = DefaultUseFormCapture ? "Только в приложении" : "В системе",
+                Text = Setting.UseFormCapture ? "Только в приложении" : "В системе",
                 FontFamily = new FontFamily("Comic Sans MS"),
                 Foreground = new SolidColorBrush(Colors.DarkSlateGray),
                 FontSize = 12,
@@ -443,9 +397,9 @@ namespace SoZvon.UI.Room_Pages
             checkBox.Checked += CheckBox_Changed;
             checkBox.Unchecked += CheckBox_Changed;
 
-            //button.Click += settingsUIManager.HotkeyButton_Click;
-            //button.PreviewKeyDown += settingsUIManager.HotkeyButton_PreviewKeyDown;
-            //button.LostFocus += settingsUIManager.HotkeyButton_LostFocus;
+            button.Click += uiManager.HotkeyButton_Click;
+            button.PreviewKeyDown += uiManager.HotkeyButton_PreviewKeyDown;
+            button.LostFocus += uiManager.HotkeyButton_LostFocus;
 
             ButtonUI = button;
             CaptureModeCheckBox = checkBox;
@@ -458,60 +412,37 @@ namespace SoZvon.UI.Room_Pages
 
             return stackPanel;
         }
-        
+
         void CheckBox_Changed(object sender, RoutedEventArgs e)
         {
             if (sender is not CheckBox checkBox)
                 return;
-
-            if (UseFormCapture == (checkBox.IsChecked is true))
+            if (Setting.UseFormCapture == (checkBox.IsChecked is true))
                 return;
 
-            UseFormCapture = checkBox.IsChecked is true;
-            UpdateUI();
+            uiManager.HotkeyCheckBox_Changed(Setting.Id, checkBox.IsChecked is true);
         }
-
-        public void HighlightButton(bool isInvalid)
+        void HighlightButton()
         {
-            if (ButtonUI is null)
+            if (ButtonUI == null)
                 return;
 
-            var color = isInvalid ? Color.FromRgb(255, 200, 200) : Color.FromRgb(255, 220, 220);
-            ButtonUI.Background = new SolidColorBrush(color);
-            ButtonUI.BorderBrush = Brushes.Red;
-            ButtonUI.BorderThickness = new Thickness(1);
-        }
-        public void ResetButtonAppearance()
-        {
-            if (ButtonUI is null)
-                return;
+            ButtonUI.Content = ToStringRepresentation(Setting.Key, Setting.Modifiers);
 
-            ButtonUI.Background = Brushes.White;
-            ButtonUI.BorderBrush = Brushes.Gray;
-            ButtonUI.BorderThickness = new Thickness(1);
-        }
-
-        static (Key, ModifierKeys) ParseHotkey(string hotkeyString)
-        {
-            Key key = Key.None;
-            ModifierKeys modifiers = ModifierKeys.None;
-
-            var parts = hotkeyString.Split('+');
-            foreach (var part in parts)
+            if (Setting.IsDuplicate)
             {
-                var trimmed = part.Trim();
-                if (trimmed.Equals("Ctrl", StringComparison.OrdinalIgnoreCase))
-                    modifiers |= ModifierKeys.Control;
-                else if (trimmed.Equals("Alt", StringComparison.OrdinalIgnoreCase))
-                    modifiers |= ModifierKeys.Alt;
-                else if (trimmed.Equals("Shift", StringComparison.OrdinalIgnoreCase))
-                    modifiers |= ModifierKeys.Shift;
-                else if (Enum.TryParse<Key>(trimmed, true, out var parsedKey))
-                    key = parsedKey;
+                ButtonUI.Background = Brushes.Red;
+                ButtonUI.BorderBrush = Brushes.Red;
+                ButtonUI.BorderThickness = new Thickness(1);
             }
-
-            return (key, modifiers);
+            else
+            {
+                ButtonUI.Background = Brushes.White;
+                ButtonUI.BorderBrush = Brushes.Gray;
+                ButtonUI.BorderThickness = new Thickness(1);
+            }
         }
+
         static string ToStringRepresentation(Key key, ModifierKeys modifier)
         {
             string text = "";
@@ -522,18 +453,26 @@ namespace SoZvon.UI.Room_Pages
                 text += "Alt + ";
             if (modifier.HasFlag(ModifierKeys.Shift))
                 text += "Shift + ";
+            if (modifier.HasFlag(ModifierKeys.Windows))
+                text += "Win + ";
 
             return text + key.ToString();
         }
     }
-    
 
     public interface ISettingsPage
     {
+        void MakeSettingsUI(List<ISetting> settingUIs);
+        void UpdateUI();
+
         void SelectMicrophoneByName(string name);
         void ReloadConnectionServ();
         void CloseApplication();
         bool IsWindowFocused();
+
+        void UpdateSetting<T>(string id, T value);
+        void ChangeHasInvalidKey(bool value);
+        List<ISetting> GetSettings();
     }
     public partial class SettingsPage : Page, ISettingsPage
     {
@@ -546,21 +485,35 @@ namespace SoZvon.UI.Room_Pages
             mainWindow = mainWindow_;
             InitializeComponent();
 
-            settingsService = new SettingsService(new XmlSettingsRepository());
-            settingsUIManager = new SettingsUIManager(settingsService);
+            settingsUIManager = new SettingsUIManager(this);
+            settingsService = new SettingsService(this);
+            
+            settingsService.StartSettings();
 
-            settingsService.LoadSettings();
-            settingsUIManager.InitializeUI(SettingsPanel, settingsService.GetSettings());
+            // Запуск обработки горячих клавиш
+            //_ = hotKeyManager.ReadKeysAsync();
         }
+
+        public void UpdateSetting<T>(string id, T value) => settingsService.UpdateSetting<T>(id, value);
+        public void ChangeHasInvalidKey(bool value) => settingsService.ChangeHasInvalidKey(value);
+        public List<ISetting> GetSettings() => settingsService.GetSettings();
 
         public void OnMicrophonesInfo(Dictionary<string, string> values)
         {
-            //if (!settingsManager.ChangeComboboxValues("Microphones", values))
-            //    mainWindow.Make_ErrorMessage("Settings", "ChangeComboboxValues is false");
+            settingsUIManager.UpdateMicrophoneOptions(values);
         }
         public void SelectMicrophoneByName(string name) => mainWindow.SelectMicrophoneByName(name);
         public void ReloadConnectionServ() => mainWindow.ReloadConnectionServ();
         public void CloseApplication() => mainWindow.CloseApplication();
+
+        public void UpdateUI() => mainWindow.MakeAction_Form(settingsUIManager.UpdateUI);
+        public void MakeSettingsUI(List<ISetting> settingUIs)
+        {
+            mainWindow.MakeAction_Form(() => {
+                var listUIs = settingsUIManager.MakeUIFromISetting(settingUIs);
+                settingsUIManager.InitializeUI(SettingsPanel, listUIs);
+            });
+        }
 
         public bool IsWindowFocused() => mainWindow.IsWindowFocused();
 

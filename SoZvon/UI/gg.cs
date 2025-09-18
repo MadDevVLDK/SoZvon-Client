@@ -1,30 +1,21 @@
 ﻿using System;
 using System.Collections.Frozen;
-using System.Globalization;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Xml.Linq;
+using Keys = System.Windows.Forms.Keys;
 
 namespace SoZvon.UI.Room_Pages
 {
-    public interface ISettingsRepository
-    {
-        void SaveSetting(string id, string value);
-        string GetSetting(string id, string defaultValue = "");
-        Dictionary<string, string> GetAllSettings();
-        void SaveHotkey(string id, Key key, ModifierKeys modifiers, bool useFormCapture);
-        (Key Key, ModifierKeys Modifiers, bool UseFormCapture) GetHotkey(string id);
-        void DeleteSetting(string id);
-        void ClearAllSettings();
-    }
     public interface ISettingsService
     {
         void ChangeHasInvalidKey(bool value);
 
         List<ISetting> GetSettings();
-        void LoadSettings();
+        void StartSettings();
 
         (bool success, string error_text) TrySaveSettings();
         (bool success, string error_text) TryResetToLast();
@@ -34,26 +25,186 @@ namespace SoZvon.UI.Room_Pages
     }
     public interface ISettingsUIManager
     {
-        void InitializeUI(StackPanel panel, List<ISetting> settings);
-        void UpdateUI();
-        void RegisterUIElement(string settingId, FrameworkElement element);
+        List<ISettingUI> MakeUIFromISetting(List<ISetting> settings);
+        void InitializeUI(StackPanel panel, List<ISettingUI> settings);
 
-        void ComboBox_OnSelectionChanged(ComboBoxSetting setting, string selectedValue);
+        void UpdateUI();
+
+        void UpdateMicrophoneOptions(Dictionary<string, string> options);
+        void ComboBox_OnSelectionChanged(string id, string selectedValue);
 
         void HotkeyButton_Click(object sender, RoutedEventArgs e);
         void HotkeyButton_PreviewKeyDown(object sender, KeyEventArgs e);
         void HotkeyButton_LostFocus(object sender, RoutedEventArgs e);
 
+        void CheckBox_Changed(string id, bool value);
+        void HotkeyCheckBox_Changed(string id, bool value);
+
         void OnHotkeyPressed(IHotkeySettings setting, bool oldUseFormCapture);
     }
 
-    public class XmlSettingsRepository : ISettingsRepository
+    public class GlobalHotKeyManager
+    {
+        [DllImport("user32.dll")] static extern short GetAsyncKeyState(Keys vkey);
+
+        readonly Dictionary<string, IHotkeySettings> currentKeys = [];
+        readonly CancellationToken cts = new();
+        readonly object currentKeys_lock = new();
+
+        bool NeedCheck = false;
+
+        public void AddorUpdateHotkey(IHotkeySettings hotkeySettings)
+        {
+            lock (currentKeys_lock)
+                currentKeys[hotkeySettings.Id] = hotkeySettings;
+        }
+        public void ClearAndAddRangeHotkey(IHotkeySettings[] hotkeySettings)
+        {
+            lock (currentKeys_lock)
+            {
+                NeedCheck = false;
+
+                currentKeys.Clear();
+
+                foreach (var hotkey in hotkeySettings)
+                {
+                    currentKeys[hotkey.Id] = hotkey;
+                }
+
+                NeedCheck = true;
+            }
+                
+        }
+        public async Task ReadKeysAsync()
+        {
+            try
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    lock (currentKeys_lock)
+                    {
+                        if (NeedCheck)
+                        {
+                            foreach (IHotkeySettings value in currentKeys.Values)
+                            {
+                                if (!IsKeyCombinationPressed(value.OldKey, value.OldModifiers))
+                                    continue;
+
+                                value.OnHotkeyPressed();
+                            }
+                        }
+                    }
+
+                    await Task.Delay(100, cts);
+                }
+            }
+            catch { }
+        }
+
+        static bool IsKeyPressed(Keys key)
+        {
+            short state = GetAsyncKeyState(key);
+            return (state & 0x8000) != 0;
+        }
+        static bool IsKeyCombinationPressed(Key key, ModifierKeys modifiers)
+        {
+            // Проверяем что нажаты именно те модификаторы, которые требуются
+            if (modifiers.HasFlag(ModifierKeys.Control) != IsKeyPressed(Keys.ControlKey))
+                return false;
+            if (modifiers.HasFlag(ModifierKeys.Shift) != IsKeyPressed(Keys.ShiftKey))
+                return false;
+            if (modifiers.HasFlag(ModifierKeys.Alt) != IsKeyPressed(Keys.Menu))
+                return false;
+            if (modifiers.HasFlag(ModifierKeys.Windows) != (IsKeyPressed(Keys.LWin) || IsKeyPressed(Keys.RWin)))
+                return false;
+
+            // Проверяем основную клавишу
+            return IsKeyPressed((Keys)KeyInterop.VirtualKeyFromKey(key));
+        }
+
+        public void StartChecking()
+        {
+            lock (currentKeys_lock)
+                NeedCheck = true;
+        }
+        public void StopChecking()
+        {
+            lock (currentKeys_lock)
+                NeedCheck = false;
+        }
+    }
+    public class XmlSettingsRepository
     {
         readonly string xmlFilePath = "settings.xml";
         readonly XDocument xmlDocument;
         readonly object lockOperations = new();
 
-        public XmlSettingsRepository() => xmlDocument = LoadOrCreateXml();
+        readonly Dictionary<string, string> defaultSettings = new() {
+            ["Theme"] = "light",
+            ["Microphones"] = "auto",
+            ["NotifyApp"] = "false",
+            ["ServerAutoConnect"] = "false"
+        };
+        readonly Dictionary<string, Tuple<Key, ModifierKeys, bool>> defaultHotkeys = new() {
+            ["MicToggle"] =  new(Key.M, ModifierKeys.Control, false),
+            ["ExitApp"] = new(Key.Q, ModifierKeys.Control | ModifierKeys.Alt, true),
+            ["AutoConnect"] = new(Key.A, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt, true)
+        };
+
+        public XmlSettingsRepository()
+        {
+            xmlDocument = LoadOrCreateXml();
+            // Сохраняем дефолтные значения при первом запуске
+            EnsureDefaultValues();
+        }
+
+        void EnsureDefaultValues()
+        {
+            lock (lockOperations)
+            {
+                bool needsSave = false;
+
+                // Проверяем и добавляем отсутствующие обычные настройки
+                foreach (var setting in defaultSettings)
+                {
+                    var element = xmlDocument.Root?.Element(setting.Key);
+                    if (element == null)
+                    {
+                        xmlDocument.Root?.Add(new XElement(setting.Key, setting.Value));
+                        needsSave = true;
+                    }
+                }
+
+                // Проверяем и добавляем отсутствующие горячие клавиши
+                var hotkeysElement = xmlDocument.Root?.Element("Hotkeys");
+                if (hotkeysElement == null)
+                {
+                    hotkeysElement = new XElement("Hotkeys");
+                    xmlDocument.Root?.Add(hotkeysElement);
+                    needsSave = true;
+                }
+
+                foreach (var hotkey in defaultHotkeys)
+                {
+                    var hotkeyElement = hotkeysElement.Element(hotkey.Key);
+                    if (hotkeyElement == null)
+                    {
+                        hotkeyElement = new XElement(hotkey.Key,
+                            new XElement("Key", hotkey.Value.Item1.ToString()),
+                            new XElement("Modifiers", ModifiersToString(hotkey.Value.Item2)),
+                            new XElement("Capture", hotkey.Value.Item3.ToString().ToLower())
+                        );
+                        hotkeysElement.Add(hotkeyElement);
+                        needsSave = true;
+                    }
+                }
+
+                if (needsSave)
+                {
+                    SaveXml(xmlDocument);
+                }
+            }
+        }
 
         XDocument LoadOrCreateXml()
         {
@@ -108,6 +259,7 @@ namespace SoZvon.UI.Room_Pages
             SaveXml(doc);
             return doc;
         }
+
         void SaveXml(XDocument doc)
         {
             lock (lockOperations)
@@ -122,7 +274,6 @@ namespace SoZvon.UI.Room_Pages
                 }
             }
         }
-
         public void SaveSetting(string id, string value)
         {
             lock (lockOperations)
@@ -139,6 +290,7 @@ namespace SoZvon.UI.Room_Pages
                 SaveXml(xmlDocument);
             }
         }
+
         public string GetSetting(string id, string defaultValue = "")
         {
             lock (lockOperations)
@@ -154,7 +306,7 @@ namespace SoZvon.UI.Room_Pages
             {
                 foreach (var element in xmlDocument.Root?.Elements() ?? [])
                 {
-                    if (element.Name != "Hotkeys") // Исключаем горячие клавиши
+                    if (element.Name != "Hotkeys")
                     {
                         settings[element.Name.LocalName] = element.Value;
                     }
@@ -164,7 +316,6 @@ namespace SoZvon.UI.Room_Pages
             return settings;
         }
 
-        // Методы для работы с горячими клавишами
         public void SaveHotkey(string id, Key key, ModifierKeys modifiers, bool useFormCapture)
         {
             lock (lockOperations)
@@ -191,12 +342,12 @@ namespace SoZvon.UI.Room_Pages
                 SaveXml(xmlDocument);
             }
         }
-        public (Key Key, ModifierKeys Modifiers, bool UseFormCapture) GetHotkey(string id)
+        public Tuple<Key, ModifierKeys, bool> GetHotkey(string id)
         {
             lock (lockOperations)
             {
                 if (xmlDocument.Root?.Element("Hotkeys")?.Element(id) is not XElement hotkeyElement)
-                    return (Key.None, ModifierKeys.None, true);
+                    return new(Key.None, ModifierKeys.None, true);
 
                 var keyStr = hotkeyElement.Element("Key")?.Value ?? "None";
                 var modifiersStr = hotkeyElement.Element("Modifiers")?.Value ?? "";
@@ -206,7 +357,7 @@ namespace SoZvon.UI.Room_Pages
                 var modifiers = StringToModifiers(modifiersStr);
                 var useFormCapture = bool.Parse(captureStr);
 
-                return (key, modifiers, useFormCapture);
+                return new(key, modifiers, useFormCapture);
             }
         }
 
@@ -248,17 +399,6 @@ namespace SoZvon.UI.Room_Pages
 
             return modifiers;
         }
-        static string GetDefaultValue(string settingName)
-        {
-            return settingName switch
-            {
-                "Theme" => "light",
-                "Microphones" => "auto",
-                "NotifyApp" => "false",
-                "ServerAutoConnect" => "false",
-                _ => ""
-            };
-        }
 
         public void DeleteSetting(string id)
         {
@@ -273,36 +413,111 @@ namespace SoZvon.UI.Room_Pages
         {
             lock (lockOperations)
             {
-                // Сохраняем только структуру, удаляем значения
-                foreach (var element in xmlDocument.Root?.Elements() ?? [])
+                // Сбрасываем обычные настройки к дефолтным значениям
+                foreach (var setting in defaultSettings)
                 {
-                    if (element.Name != "Hotkeys")
+                    var element = xmlDocument.Root?.Element(setting.Key);
+                    if (element != null)
                     {
-                        element.Value = GetDefaultValue(element.Name.LocalName);
+                        element.Value = setting.Value;
                     }
                 }
 
-                // Сбрасываем горячие клавиши к значениям по умолчанию
-                var defaultHotkeys = CreateDefaultXml().Root?.Element("Hotkeys");
+                // Сбрасываем горячие клавиши к дефолтным значениям
+                xmlDocument.Root?.Element("Hotkeys")?.Remove();
 
-                if (defaultHotkeys != null)
+                // Создаем новый элемент с дефолтными горячими клавишами
+                var newHotkeysElement = new XElement("Hotkeys");
+                foreach (var hotkey in defaultHotkeys)
                 {
-                    xmlDocument.Root?.Element("Hotkeys")?.ReplaceWith(defaultHotkeys);
+                    newHotkeysElement.Add(new XElement(hotkey.Key,
+                        new XElement("Key", hotkey.Value.Item1.ToString()),
+                        new XElement("Modifiers", ModifiersToString(hotkey.Value.Item2)),
+                        new XElement("Capture", hotkey.Value.Item3.ToString().ToLower())
+                    ));
                 }
 
+                xmlDocument.Root?.Add(newHotkeysElement);
                 SaveXml(xmlDocument);
             }
         }
+
+        // Добавляем метод для получения дефолтных значений
+        public string GetDefaultSetting(string id)
+        {
+            return defaultSettings.TryGetValue(id, out var value) ? value : "";
+        }
+        public Tuple<Key, ModifierKeys, bool> GetDefaultHotkey(string id)
+        {
+            return defaultHotkeys.TryGetValue(id, out var value) ? value : new(Key.None, ModifierKeys.None, true);
+        }
     }
-    public class SettingsService(XmlSettingsRepository saveRepository) : ISettingsService
+    public class SettingsService(ISettingsPage settingsPage) : ISettingsService
     {
-        readonly XmlSettingsRepository saveRepository = saveRepository;
+        readonly ISettingsPage settingsPage = settingsPage;
+        readonly XmlSettingsRepository saveRepository = new();
         readonly Dictionary<string, ISetting> currentSettings = [];
         readonly Dictionary<string, ISetting> lastSettings = [];
         readonly ReaderWriterLockSlim settingsLock = new();
 
         bool isLoading = false;
         bool hasInvalidKeys = false;
+
+        public void StartSettings()
+        {
+            settingsLock.EnterWriteLock();
+            try
+            {
+                LoadSettings();
+                LoadUI();
+            }
+            finally
+            {
+                settingsLock.ExitWriteLock();
+            }
+        }
+        void LoadSettings()
+        {
+            isLoading = true;
+
+            var themeDefault = saveRepository.GetDefaultSetting("Theme");
+            var microphonesDefault = saveRepository.GetDefaultSetting("Microphones");
+            var notifyAppDefault = bool.Parse(saveRepository.GetDefaultSetting("NotifyApp"));
+            var serverAutoConnectDefault = bool.Parse(saveRepository.GetDefaultSetting("ServerAutoConnect"));
+
+            // Загрузка обычных настроек с использованием дефолтных значений из репозитория
+            var theme = saveRepository.GetSetting("Theme", themeDefault);
+            var microphones = saveRepository.GetSetting("Microphones", microphonesDefault);
+            var notifyApp = bool.Parse(saveRepository.GetSetting("NotifyApp", saveRepository.GetDefaultSetting("NotifyApp")));
+            var serverAutoConnect = bool.Parse(saveRepository.GetSetting("ServerAutoConnect", saveRepository.GetDefaultSetting("ServerAutoConnect")));
+
+            // Создание объектов настроек
+            currentSettings["Theme"] = new ComboBoxSetting("Theme", "Тема оформления", theme, themeDefault, new() { ["light"] = "Светлая", ["dark"] = "Темная" });
+            currentSettings["Microphones"] = new ComboBoxSetting("Microphones", "Микрофон", microphones, microphonesDefault, new() { ["auto"] = "По умолчанию" });
+
+            currentSettings["NotifyApp"] = new CheckboxSetting("NotifyApp", "Включить уведомления", notifyApp, notifyAppDefault);
+            currentSettings["ServerAutoConnect"] = new CheckboxSetting("ServerAutoConnect", "Автоподключение к серверу", serverAutoConnect, serverAutoConnectDefault);
+
+            // Загрузка горячих клавиш с использованием дефолтных значений
+            var micToggleDefault = saveRepository.GetDefaultHotkey("MicToggle");
+            var exitAppDefault = saveRepository.GetDefaultHotkey("ExitApp");
+            var autoConnectDefault = saveRepository.GetDefaultHotkey("AutoConnect");
+
+            var micToggleHK = saveRepository.GetHotkey("MicToggle");
+            var exitAppHK = saveRepository.GetHotkey("ExitApp");
+            var autoConnectHK = saveRepository.GetHotkey("AutoConnect");
+
+            // Создание объектов горячих клавиш с дефолтными значениями
+            currentSettings["MicToggle"] = new HotkeySetting("MicToggle", "Вкл/Выкл микрофон", micToggleHK, micToggleDefault);
+            currentSettings["ExitApp"] = new HotkeySetting("ExitApp", "Выход из приложения", exitAppHK, exitAppDefault);
+            currentSettings["AutoConnect"] = new HotkeySetting("AutoConnect", "Переподключиться к серверу", autoConnectHK, autoConnectDefault);
+
+            SaveCurrentStates();
+            CheckForDuplicateHotkeys(); // Проверяем дубликаты после загрузки
+
+            isLoading = false;
+        }
+        void LoadUI() => settingsPage.MakeSettingsUI([.. currentSettings.Values]);
 
         public void ChangeHasInvalidKey(bool value)
         {
@@ -317,29 +532,6 @@ namespace SoZvon.UI.Room_Pages
             }
         }
 
-        public T GetSetting<T>(string id, T defaultValue = default!)
-        {
-            settingsLock.EnterReadLock();
-            try
-            {
-                if (currentSettings.TryGetValue(id, out var setting))
-                {
-                    return setting switch
-                    {
-                        ComboBoxSetting comboBox when typeof(T) == typeof(string) => (T)(object)comboBox.SelectedValue,
-                        CheckboxSetting checkbox when typeof(T) == typeof(bool) => (T)(object)checkbox.IsChecked,
-                        HotkeySetting hotkey when typeof(T) == typeof((Key, ModifierKeys, bool)) =>
-                            (T)(object)(hotkey.Key, hotkey.Modifiers, hotkey.UseFormCapture),
-                        _ => defaultValue
-                    };
-                }
-                return defaultValue;
-            }
-            finally
-            {
-                settingsLock.ExitReadLock();
-            }
-        }
         public List<ISetting> GetSettings()
         {
             settingsLock.EnterReadLock();
@@ -370,9 +562,21 @@ namespace SoZvon.UI.Room_Pages
                         case HotkeySetting hotkey when value is ValueTuple<Key, ModifierKeys, bool, bool> tupleValue:
                             hotkey.Key = tupleValue.Item1;
                             hotkey.Modifiers = tupleValue.Item2;
-                            hotkey.UseFormCapture = tupleValue.Item3; 
+                            hotkey.UseFormCapture = tupleValue.Item3;
                             hotkey.IsDuplicate = tupleValue.Item4;
                             break;
+                        case HotkeySetting hotkey when value is bool val:
+                            hotkey.UseFormCapture = val;
+                            hotkey.IsDuplicate = false;
+                            break;
+                        default:
+                            throw new NotSupportedException("Unsupported setting type");
+                    }
+
+                    // Проверка дубликатов после обновления горячих клавиш
+                    if (setting is HotkeySetting)
+                    {
+                        CheckForDuplicateHotkeys();
                     }
                 }
             }
@@ -380,56 +584,42 @@ namespace SoZvon.UI.Room_Pages
             {
                 settingsLock.ExitWriteLock();
             }
-        }
-        public void LoadSettings()
-        {
-            settingsLock.EnterWriteLock();
-            try
-            {
-                isLoading = true;
-
-                // Загрузка обычных настроек
-                var theme = saveRepository.GetSetting("Theme", "light");
-                var microphones = saveRepository.GetSetting("Microphones", "auto");
-                var notifyApp = bool.Parse(saveRepository.GetSetting("NotifyApp", "false"));
-                var serverAutoConnect = bool.Parse(saveRepository.GetSetting("ServerAutoConnect", "false"));
-
-                // Создание объектов настроек
-                currentSettings["Theme"] = new ComboBoxSetting("Theme", "Тема оформления", theme, new() { ["light"] = "Светлая", ["dark"] = "Темная" }, null);
-                currentSettings["Microphones"] = new ComboBoxSetting("Microphones", "Микрофон", microphones, new() { ["auto"] = "По умолчанию" }, null);
-
-                currentSettings["NotifyApp"] = new CheckboxSetting("NotifyApp", "Включить уведомления", notifyApp, null);
-                currentSettings["ServerAutoConnect"] = new CheckboxSetting("ServerAutoConnect", "Автоподключение к серверу", serverAutoConnect, null);
-
-                // Загрузка горячих клавиш
-                var micToggleHotkey = saveRepository.GetHotkey("MicToggle");
-                var exitAppHotkey = saveRepository.GetHotkey("ExitApp");
-                var autoConnectHotkey = saveRepository.GetHotkey("AutoConnect");
-
-                // Создание объектов горячих клавиш
-                currentSettings["MicToggle"] = new HotkeySetting("MicToggle", "Вкл/Выкл микрофон",
-                    micToggleHotkey.Key, micToggleHotkey.Modifiers, null, null, null, micToggleHotkey.UseFormCapture);
-                currentSettings["ExitApp"] = new HotkeySetting("ExitApp", "Выход из приложения",
-                    exitAppHotkey.Key, exitAppHotkey.Modifiers, null, null, null, exitAppHotkey.UseFormCapture);
-                currentSettings["AutoConnect"] = new HotkeySetting("AutoConnect", "Переподключиться к серверу",
-                    autoConnectHotkey.Key, autoConnectHotkey.Modifiers, null, null, null, autoConnectHotkey.UseFormCapture);
-
-                SaveCurrentState();
-            }
-            finally
-            {
-                isLoading = false;
-                settingsLock.ExitWriteLock();
-            }
-        }
+        }        
 
         bool HasChanges() => currentSettings.Values.Any(setting => setting.HasChanges());
         bool HasChangesDefaultSettings() => currentSettings.Values.Any(setting => setting.HasChangesDefaultSettings());
+        bool CheckForDuplicateHotkeys()
+        {
+            var hotkeySettings = currentSettings.Values.OfType<HotkeySetting>().ToList();
 
-        void SaveCurrentState()
+            for (int i = 0; i < hotkeySettings.Count; i++)
+            {
+                for (int j = i + 1; j < hotkeySettings.Count; j++)
+                {
+                    var setting1 = hotkeySettings[i];
+                    var setting2 = hotkeySettings[j];
+
+                    if (setting1.Key == setting2.Key && setting1.Modifiers == setting2.Modifiers && setting1.Key != Key.None)
+                    {
+                        setting1.IsDuplicate = true;
+                        setting2.IsDuplicate = true;
+                        return true;
+                    }
+                }
+            }
+
+            // Сбросить флаги дубликатов, если дубликатов нет
+            foreach (var hotkey in hotkeySettings)
+            {
+                hotkey.IsDuplicate = false;
+            }
+
+            return false;
+        }
+
+        void SaveCurrentStates()
         {
             lastSettings.Clear();
-
             foreach (var pair in currentSettings)
             {
                 lastSettings[pair.Key] = CloneSetting(pair.Value);
@@ -462,17 +652,23 @@ namespace SoZvon.UI.Room_Pages
                 if (hasInvalidKeys)
                     return (false, "Есть забаненные символы");
 
+                if (CheckForDuplicateHotkeys())
+                    return (false, "Обнаружены дублирующиеся горячие клавиши");
+
                 if (!HasChanges())
                     return (false, "Настройки соответствуют сохраненным");
 
                 foreach (var setting in currentSettings.Values)
                 {
-                    SaveSettingToRepository(setting);
                     setting.SaveCurrentState();
+                    SaveSettingToRepository(setting);
                 }
 
-                SaveCurrentState();
-                return (false, string.Empty);
+                // Добавить интеграцию с 
+
+                SaveCurrentStates();
+
+                return (true, string.Empty);
             }
             finally
             {
@@ -490,7 +686,10 @@ namespace SoZvon.UI.Room_Pages
                 foreach (var setting in currentSettings.Values)
                 {
                     setting.ResetToOriginal();
+                    //SaveSettingToRepository(setting);
                 }
+
+                settingsPage.UpdateUI();
 
                 return (true, string.Empty);
             }
@@ -507,8 +706,14 @@ namespace SoZvon.UI.Room_Pages
                 if (!HasChangesDefaultSettings())
                     return (false, "Настройки соответствуют установленным по умолчанию");
 
-                saveRepository.ClearAllSettings();
-                LoadSettings(); // Перезагружаем настройки по умолчанию
+                foreach (var setting in currentSettings.Values)
+                {
+                    setting.ResetToDefault();
+                }
+
+                //saveRepository.ClearAllSettings();
+                settingsPage.UpdateUI();
+
                 return (true, string.Empty);
             }
             finally
@@ -519,66 +724,72 @@ namespace SoZvon.UI.Room_Pages
 
         static ISetting CloneSetting(ISetting setting)
         {
-            return setting switch 
+            return setting switch
             {
-                HotkeySetting hotkey => new HotkeySetting(hotkey.Id, hotkey.Description, hotkey.Key, hotkey.Modifiers, null, null, null, hotkey.UseFormCapture),
-                CheckboxSetting checkbox => new CheckboxSetting(checkbox.Id, checkbox.Description, checkbox.IsChecked, null),
-                ComboBoxSetting comboBox => new ComboBoxSetting(comboBox.Id, comboBox.Description, comboBox.SelectedValue, comboBox.Options, null),
+                HotkeySetting hotkey => new HotkeySetting(hotkey),
+                CheckboxSetting checkbox => new CheckboxSetting(checkbox),
+                ComboBoxSetting comboBox => new ComboBoxSetting(comboBox),
                 _ => throw new NotSupportedException("Unsupported setting type")
             };
         }
     }
-    public class SettingsUIManager(ISettingsService settingsService) : ISettingsUIManager
+    public class SettingsUIManager(ISettingsPage settingsPage) : ISettingsUIManager
     {
-        readonly ISettingsService settingsService = settingsService;
-        readonly Dictionary<string, FrameworkElement> _uiElements = [];
+        readonly ISettingsPage settingsPage = settingsPage;
+        readonly Dictionary<string, ISettingUI> settingUIs = [];
 
-        readonly FrozenSet<Key> skipKeys = new HashSet<Key> { Key.LeftCtrl, Key.RightCtrl, Key.LeftAlt, Key.RightAlt, Key.LeftShift, Key.RightShift }.ToFrozenSet();
-        readonly FrozenSet<Key> bannedKeys = new HashSet<Key> { Key.Escape, Key.Apps, Key.System, Key.LWin, Key.RWin }.ToFrozenSet();
+        readonly FrozenSet<Key> skipKeys = new HashSet<Key> { Key.LeftCtrl, Key.RightCtrl, Key.LeftAlt, Key.RightAlt, Key.LeftShift, Key.RightShift, Key.LWin, Key.RWin }.ToFrozenSet();
+        readonly FrozenSet<Key> bannedKeys = new HashSet<Key> { Key.Escape, Key.Apps, Key.System }.ToFrozenSet();
 
         string currentHotkeyId = string.Empty;
 
-        public void InitializeUI(StackPanel panel, List<ISetting> settings)
+        public void InitializeUI(StackPanel panel, List<ISettingUI> settings)
         {
             panel.Children.Clear();
+            settingUIs.Clear();
 
-            // Создаем UI элементы для всех настроек
             foreach (var setting in settings)
             {
-                var uiElement = CreateUIElement(setting);
+                var uiElement = setting.CreateUI();
                 panel.Children.Add(uiElement);
 
-                _uiElements[setting.Id] = uiElement;
+                var id = setting.GetID();
+                settingUIs[id] = setting;
             }
         }
         public void UpdateUI()
         {
-            //if (_uiElements.TryGetValue(id, out var element))
-            //{
-            //    setting.UpdateUI();
-            //}
-        }
-        public void RegisterUIElement(string settingId, FrameworkElement element)
-        {
-            _uiElements[settingId] = element;
-        }
-        static StackPanel CreateUIElement(ISetting setting)
-        {
-            return setting switch
+            foreach (var settingUI in settingUIs.Values)
             {
-                ComboBoxSetting comboBox => comboBox.CreateUI(),
-                CheckboxSetting checkbox => checkbox.CreateUI(),
-                HotkeySetting hotkey => hotkey.CreateUI(),
-                _ => null!
-            };
+                settingUI.UpdateUI();
+            }
+
+            currentHotkeyId = string.Empty;
         }
 
-        public void ComboBox_OnSelectionChanged(ComboBoxSetting setting, string selectedValue)
+        public void UpdateMicrophoneOptions(Dictionary<string, string> options)
         {
-            settingsService.UpdateSetting(setting.Id, selectedValue);
-            // Дополнительная логика если нужно
+            if (settingUIs.TryGetValue("Microphones", out var settingUI) && settingUI is ComboBoxSettingUI comboBoxUI)
+            {
+                comboBoxUI.UpdateValuesUI(options);
+            }
         }
 
+        public void ComboBox_OnSelectionChanged(string id, string selectedValue)
+        {
+            settingsPage.UpdateSetting(id, selectedValue);
+        }
+        public void CheckBox_Changed(string id, bool value)
+        {
+            settingsPage.UpdateSetting(id, value);
+            settingUIs[id].UpdateUI();
+        }
+
+        public void HotkeyCheckBox_Changed(string id, bool value)
+        {
+            settingsPage.UpdateSetting(id, value);
+            settingUIs[id].UpdateUI();
+        }
         public void HotkeyButton_Click(object sender, RoutedEventArgs e)
         {
             if (sender is not Button button || button.Tag is not string id)
@@ -590,22 +801,32 @@ namespace SoZvon.UI.Room_Pages
         }
         public void HotkeyButton_PreviewKeyDown(object sender, KeyEventArgs e)
         {
+            if (currentHotkeyId == string.Empty)
+                return;
+
             Key newKey = e.Key;
             ModifierKeys newModifiers = Keyboard.Modifiers;
 
-            if (currentHotkeyId == string.Empty || skipKeys.Contains(newKey))
+            if (skipKeys.Contains(newKey))
                 return;
 
             if (bannedKeys.Contains(newKey))
             {
-                settingsService.ChangeHasInvalidKey(true);
+                settingsPage.ChangeHasInvalidKey(true);
+                currentHotkeyId = string.Empty;
+                Keyboard.ClearFocus();
                 return;
             }
 
-            settingsService.UpdateSetting(currentHotkeyId, (newKey, newModifiers, false));
-            settingsService.ChangeHasInvalidKey(false);
-            currentHotkeyId = string.Empty;
+            // Проверка на дубликаты
+            bool isDuplicate = CheckIfHotkeyExists(newKey, newModifiers, currentHotkeyId);
 
+            // Обновляем настройку
+            settingsPage.UpdateSetting(currentHotkeyId, (newKey, newModifiers, false, isDuplicate));
+            UpdateUI();
+
+            settingsPage.ChangeHasInvalidKey(false);
+            currentHotkeyId = string.Empty;
             Keyboard.ClearFocus();
             e.Handled = true;
         }
@@ -613,12 +834,56 @@ namespace SoZvon.UI.Room_Pages
         {
             if (sender is not Button button || button.Tag is not string id)
                 return;
-            else if (id == currentHotkeyId)
+
+            if (id == currentHotkeyId)
+            {
                 currentHotkeyId = string.Empty;
+
+                // Восстанавливаем текст кнопки
+                if (settingUIs.TryGetValue(id, out var settingUI))
+                {
+                    settingUI.UpdateUI();
+                }
+            }
         }
         public void OnHotkeyPressed(IHotkeySettings setting, bool oldUseFormCapture)
         {
-            // Логика обработки горячих клавиш
+            // Реализация обработки горячих клавиш
+            // Этот метод должен быть вызван из GlobalHotKeyManager
+            //Console.WriteLine($"Hotkey pressed: {setting.Description}");
+        }
+
+        bool CheckIfHotkeyExists(Key key, ModifierKeys modifiers, string currentId)
+        {
+            var settings = settingsPage.GetSettings();
+            var hotkeySettings = settings.OfType<HotkeySetting>().Where(h => h.Id != currentId);
+
+            return hotkeySettings.Any(h => h.Key == key && h.Modifiers == modifiers && key != Key.None);
+        }
+
+        public List<ISettingUI> MakeUIFromISetting(List<ISetting> settings)
+        {
+            var settingsUIList = new List<ISettingUI>();
+
+            foreach (var setting in settings)
+            {
+                switch (setting)
+                {
+                    case ComboBoxSetting comboBox:
+                        settingsUIList.Add(new ComboBoxSettingUI(comboBox, this));
+                        break;
+                    case CheckboxSetting checkbox:
+                        settingsUIList.Add(new CheckboxSettingUI(checkbox, this));
+                        break;
+                    case HotkeySetting hotkey:
+                        settingsUIList.Add(new HotkeySettingUI(hotkey, this));
+                        break;
+                    default: 
+                        throw new ArgumentException("WTF");
+                }
+            }
+
+            return settingsUIList;
         }
     }
 }
