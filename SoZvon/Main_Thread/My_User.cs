@@ -1,9 +1,442 @@
-﻿using SoZvon.SubClasses;
-using System.Text;
+﻿using System.Text;
 using System.Threading.Channels;
 
 namespace SoZvon.Main_Thread
 {
+    using SubClasses;
+
+    public partial class My_User
+    {
+        readonly Channel<Action_Interfaces> Interfaces_Channel = Channel.CreateBounded<Action_Interfaces>(new BoundedChannelOptions(2000) { FullMode = BoundedChannelFullMode.Wait });
+
+        async Task Interfaces_Channel_Thread(CancellationToken cancellationToken)
+        {
+            try
+            {
+                await foreach (Action_Interfaces action_IUser in Interfaces_Channel.Reader.ReadAllAsync(cancellationToken))
+                {
+                    try
+                    {
+                        Action action = InterpretateActionInterfaces(action_IUser);
+                        OnAction(action);
+                    }
+                    catch (OperationCanceledException) { }
+                    catch (My_Exception ex)
+                    {
+                        Make_ErrorMessage(ex.Title ?? action_IUser.Action.ToString(), ex.Message);
+                    }
+                }
+            }
+            catch (OperationCanceledException) { return; }
+        }
+        Action InterpretateActionInterfaces(Action_Interfaces action_IUser)
+        {
+            Action action;
+
+            var dict = action_IUser.Params;
+
+            switch (action_IUser.Action)
+            {
+                case ActionToIUser.MessageNotifyOccurred:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("title", out var title) || !dict.TryGetValue<string>("text", out var text))
+                            throw new My_Exception("no valid params");
+
+                        action = () => Make_NotifyMessage(title, text);
+                        break;
+                    }
+                case ActionToIUser.MessageErrorOccurred:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("title", out var title) || !dict.TryGetValue<string>("text", out var text))
+                            throw new My_Exception("no valid params");
+
+                        action = () => Make_ErrorMessage(title, text);
+                        break;
+                    }
+                case ActionToIUser.LogNotifyOccurred:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("text", out var text))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.ShowNotifyLog, new()
+                        {
+                            ["text"] = text
+                        });
+                        break;
+                    }
+                case ActionToIUser.LogErrorOccurred:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("text", out var text))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.ShowErrorLog, new()
+                        {
+                            ["text"] = text
+                        });
+                        break;
+                    }
+                case ActionToIUser.ApplicationExit:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = () =>
+                        {
+                            OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.OnCloseApplication, []);
+                            OnIUserAction(InterfaceToSend.IVoiceManager, ActionFromIUser.OnCloseApplication, []);
+                            OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.OnCloseApplication, []);
+
+                            cts.Cancel();
+                            recieved_raw_messages_channel.Writer.Complete();
+                            buttons_function_caller_channel.Writer.Complete();
+                        };
+                        break;
+                    }
+                case ActionToIUser.ServerNotifyOccured:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<NotificationServer>("notification", out var notification))
+                            throw new My_Exception("no valid params");
+
+                        action = () => MakeNotificationServer(notification);
+                        break;
+                    }
+                case ActionToIUser.MessageRecieved:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<Message>("message", out var message))
+                            throw new My_Exception("no valid params");
+
+                        action = () => ReceiveRawMessage(message);
+                        break;
+                    }
+                case ActionToIUser.IsConnectedChanged:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<bool>("value", out var value))
+                            throw new My_Exception("no valid params");
+
+                        action = () =>
+                        {
+                            if (!value)
+                                ClearValuesOnLostConnection();
+
+                            OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnIsConnectedChange, new()
+                            {
+                                ["value"] = value
+                            });
+                        };
+                        break;
+                    }
+                case ActionToIUser.ConnectionClosedVoiceChat:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnExitVoiceChat, []);
+                        break;
+                    }
+                case ActionToIUser.TagsTextChange:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("text", out var text))
+                            throw new My_Exception("no valid params");
+
+                        action = () => TagsTextChange(text);
+                        break;
+                    }
+                case ActionToIUser.UpdateIP:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("ip", out var ip))
+                            throw new My_Exception("no valid params");
+
+                        action = () => {
+                            OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.OnChangeIp, new() { ["ip"] = ip });
+                            OnIUserAction(InterfaceToSend.IVoiceManager, ActionFromIUser.OnChangeIp, new() { ["ip"] = ip });
+                            OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.OnChangeIp, new() { ["ip"] = ip });
+                        };
+                        break;
+                    }
+                case ActionToIUser.SetOperationId:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<string>("id", out var id))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.SetOperationId, new()
+                        {
+                            ["fileName"] = fileName,
+                            ["id"] = id
+                        });
+                        break;
+                    }
+                case ActionToIUser.DownloadFile:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("filename", out var filename) || !dict.TryGetValue<string>("saveFolder", out var saveFolder))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.DownloadFile, new()
+                        {
+                            ["filename"] = filename,
+                            ["saveFolder"] = saveFolder
+                        });
+                        break;
+                    }
+                case ActionToIUser.UploadFile:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("filename", out var filename))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.UploadFile, new()
+                        {
+                            ["filename"] = filename
+                        });
+                        break;
+                    }
+                case ActionToIUser.GetInfoFile:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("filename", out var filename))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.GetInfoFile, new()
+                        {
+                            ["filename"] = filename
+                        });
+                        break;
+                    }
+                case ActionToIUser.CancelOperation:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("operationID", out var operationID))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.CancelOperation, new()
+                        {
+                            ["operationID"] = operationID
+                        });
+                        break;
+                    }
+                case ActionToIUser.OnFocusTagTextblock:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<bool>("GotFocus", out var GotFocus) || !dict.TryGetValue<string>("text", out var text))
+                            throw new My_Exception("no valid params");
+
+                        action = () =>
+                        {
+                            if (GotFocus)
+                            {
+                                if (IsRoomNameNull(out string roomName))
+                                    throw new My_Exception("Room_Name is null");
+
+                                if (!roomManager.TryGetRoom(roomName, out Room? room) || room is null)
+                                    return;
+
+                                OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.ShowUsersTags, new()
+                                {
+                                    ["users"] = room.GetUsers(),
+                                    ["text"] = text
+                                });
+                            }
+                            else
+                            {
+                                OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.HideUsersTags, []);
+                            }
+                        };
+                        break;
+                    }
+                case ActionToIUser.OnSendingMessageTextBox:
+                    {
+                        if (dict.Count != 3 || !dict.TryGetValue<string>("reciever", out var reciever) || !dict.TryGetValue<string>("text", out var text))
+                            throw new My_Exception("no valid params");
+
+                        if (!dict.TryGetValue<My_FileInfo[]>("filesInfos", out var filesInfos))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnSendingMessageTextBox(reciever, text, filesInfos);
+                        break;
+                    }
+                case ActionToIUser.OnProgressHandler:
+                    {
+                        if (dict.Count != 3 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<int>("percent", out var percent))
+                            throw new My_Exception("no valid params");
+
+                        if (!dict.TryGetValue<long>("fileSize", out var fileSize))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnProgressHandler, new()
+                        {
+                            ["fileName"] = fileName,
+                            ["percent"] = percent,
+                            ["fileSize"] = fileSize,
+                        });
+                        break;
+                    }
+                case ActionToIUser.OnFileInfoHandler:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<long>("fileSize", out var fileSize))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnFileInfoHandler, new()
+                        {
+                            ["fileName"] = fileName,
+                            ["fileSize"] = fileSize
+                        });
+                        break;
+                    }
+                case ActionToIUser.OnErrorHandler:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<string>("text", out var text))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnErrorHandler, new()
+                        {
+                            ["fileName"] = fileName,
+                            ["text"] = text
+                        });
+                        break;
+                    }
+                case ActionToIUser.OnUploadErrorHandler:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<string>("text", out var text))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnUploadErrorHandler, new()
+                        {
+                            ["fileName"] = fileName,
+                            ["text"] = text
+                        });
+                        break;
+                    }
+                case ActionToIUser.GetMicrophonesInfo:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = () =>
+                        {
+                            var microphones = voiceManager.GetMicrophoneDevices();
+                            OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnMicrophonesInfo, new() { ["microphones"] = microphones });
+                        };
+                        break;
+                    }
+                case ActionToIUser.OnMicrophonesInfo:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<Dictionary<string, string>>("microphones", out var microphones))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnMicrophonesInfo, new() { ["microphones"] = microphones });
+                        break;
+                    }
+                case ActionToIUser.SelectMicrophoneByName:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("microphone", out var microphone))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IVoiceManager, ActionFromIUser.OnSelectMicrophoneByName, new() { ["microphone"] = microphone });
+                        break;
+                    }
+                case ActionToIUser.ReloadConnectionServer:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.ReloadConnectionServer, []);
+                        break;
+                    }
+
+                case ActionToIUser.UpdateUISettings:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.UpdateUISettings, []);
+                        break;
+                    }
+                case ActionToIUser.UpdateUISetting:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("id", out var id))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.UpdateUISetting, new()
+                        {
+                            ["id"] = id
+                        });
+                        break;
+                    }
+                case ActionToIUser.MakeUISettings:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<List<SettingsLogicManager.SettingsLogic.ISetting>>("settingsUI", out var settingsUI))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.MakeUISettings, new()
+                        {
+                            ["settingsUI"] = settingsUI
+                        });
+                        break;
+                    }
+                case ActionToIUser.OnHotkeyPressedSettings:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("id", out var id) || !dict.TryGetValue<bool>("UseFormCapture", out var UseFormCapture))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnHotkeyPressedSettings, new()
+                        {
+                            ["id"] = id,
+                            ["UseFormCapture"] = UseFormCapture
+                        });
+                        break;
+                    }
+
+                case ActionToIUser.ChangeHasInvalidKeySetting:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<bool>("value", out var value))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.ISettingsService, ActionFromIUser.ChangeHasInvalidKeySetting, new()
+                        {
+                            ["value"] = value
+                        });
+                        break;
+                    }
+                case ActionToIUser.UpdateSetting:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("id", out var id) || !dict.TryGetValue("value", out var value))
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.ISettingsService, ActionFromIUser.UpdateSetting, new()
+                        {
+                            ["id"] = id,
+                            ["value"] = value
+                        });
+                        break;
+                    }
+                case ActionToIUser.TrySaveSettings:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.ISettingsService, ActionFromIUser.TrySaveSettings, []);
+                        break;
+                    }
+                case ActionToIUser.TryResetToDefaultSettings:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.ISettingsService, ActionFromIUser.TryResetToDefaultSettings, []);
+                        break;
+                    }
+                case ActionToIUser.TryResetToLastSettings:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = () => OnIUserAction(InterfaceToSend.ISettingsService, ActionFromIUser.TryResetToLastSettings, []);
+                        break;
+                    }
+
+                default:
+                    throw new My_Exception("no valid ActionFromIUser");
+            }
+
+            return action;
+        }
+        public async void OnInterfacesAction(ActionToIUser action_IUser, Dictionary<string, object> dict) => await Interfaces_Channel.Writer.WriteAsync(new(action_IUser, dict));
+    }
     public partial class My_User
     {
         readonly ReaderWriterLockSlim userLock = new();
@@ -78,340 +511,14 @@ namespace SoZvon.Main_Thread
             }
         }
     }
-    public partial class My_User
-    {
-        readonly Channel<Action_Interfaces> Interfaces_Channel = Channel.CreateBounded<Action_Interfaces>(new BoundedChannelOptions(2000) { FullMode = BoundedChannelFullMode.Wait });
-
-        async Task Interfaces_Channel_Thread(CancellationToken cancellationToken)
-        {
-            try
-            {
-                await foreach (Action_Interfaces action_IUser in Interfaces_Channel.Reader.ReadAllAsync(cancellationToken))
-                {
-                    try
-                    {
-                        Action action = InterpretateActionInterfaces(action_IUser);
-                        OnAction(action);
-                    }
-                    catch (OperationCanceledException) { }
-                    catch (My_Exception ex)
-                    {
-                        Make_ErrorMessage(ex.Title ?? action_IUser.Action.ToString(), ex.Message);
-                    }
-                }
-            }
-            catch (OperationCanceledException) { return; }
-        }
-        Action InterpretateActionInterfaces(Action_Interfaces action_IUser)
-        {
-            Action action;
-
-            var dict = action_IUser.Params;
-
-            switch (action_IUser.Action)
-            {
-                case ActionToIUser.MessageNotifyOccurred:
-                    {
-                        if (dict.Count != 2 || !dict.TryGetValue<string>("title", out var title) || !dict.TryGetValue<string>("text", out var text))
-                            throw new My_Exception("no valid params");
-
-                        action = () => Make_NotifyMessage(title, text);
-                        break;
-                    }
-                case ActionToIUser.MessageErrorOccurred:
-                    {
-                        if (dict.Count != 2 || !dict.TryGetValue<string>("title", out var title) || !dict.TryGetValue<string>("text", out var text))
-                            throw new My_Exception("no valid params");
-
-                        action = () => Make_ErrorMessage(title, text);
-                        break;
-                    }
-                case ActionToIUser.LogNotifyOccurred:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("text", out var text))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.ShowNotifyLog, new() {
-                            ["text"] = text
-                        });
-                        break;
-                    }
-                case ActionToIUser.LogErrorOccurred:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("text", out var text))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.ShowErrorLog, new() {
-                            ["text"] = text
-                        });
-                        break;
-                    }
-                case ActionToIUser.ApplicationExit:
-                    {
-                        if (dict.Count != 0)
-                            throw new My_Exception("no valid params");
-
-                        action = () =>
-                        {
-                            OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.OnCloseApplication, []);
-                            OnIUserAction(InterfaceToSend.IVoiceManager, ActionFromIUser.OnCloseApplication, []);
-                            OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.OnCloseApplication, []);
-
-                            cts.Cancel();
-                            recieved_raw_messages_channel.Writer.Complete();
-                            buttons_function_caller_channel.Writer.Complete();
-                        };
-                        break;
-                    }
-                case ActionToIUser.ServerNotifyOccured:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<NotificationServer>("notification", out var notification))
-                            throw new My_Exception("no valid params");
-
-                        action = () => MakeNotificationServer(notification);
-                        break;
-                    }
-                case ActionToIUser.MessageRecieved:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<Message>("message", out var message))
-                            throw new My_Exception("no valid params");
-
-                        action = () => ReceiveRawMessage(message);
-                        break;
-                    }
-                case ActionToIUser.IsConnectedChanged:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<bool>("value", out var value))
-                            throw new My_Exception("no valid params");
-
-                        action = () =>
-                        {
-                            if (!value)
-                                ClearValuesOnLostConnection();
-
-                            OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnIsConnectedChange, new() {
-                                ["value"] = value
-                            });
-                        };
-                        break;
-                    }
-                case ActionToIUser.ConnectionClosedVoiceChat:
-                    {
-                        if (dict.Count != 0)
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnExitVoiceChat, []);
-                        break;
-                    }
-                case ActionToIUser.TagsTextChange:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("text", out var text))
-                            throw new My_Exception("no valid params");
-
-                        action = () => TagsTextChange(text);
-                        break;
-                    }
-                case ActionToIUser.UpdateIP:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("ip", out var ip))
-                            throw new My_Exception("no valid params");
-
-                        action = () => {
-                            OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.OnChangeIp, new() { ["ip"] = ip });
-                            OnIUserAction(InterfaceToSend.IVoiceManager, ActionFromIUser.OnChangeIp, new() { ["ip"] = ip });
-                            OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.OnChangeIp, new() { ["ip"] = ip });
-                        };
-                        break;
-                    }
-                case ActionToIUser.SetOperationId:
-                    {
-                        if (dict.Count != 2 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<string>("id", out var id))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.SetOperationId, new() { 
-                            ["fileName"] = fileName, 
-                            ["id"] = id 
-                        });
-                        break;
-                    }
-                case ActionToIUser.DownloadFile:
-                    {
-                        if (dict.Count != 2 || !dict.TryGetValue<string>("filename", out var filename) || !dict.TryGetValue<string>("saveFolder", out var saveFolder))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.DownloadFile, new() {
-                            ["filename"] = filename,
-                            ["saveFolder"] = saveFolder
-                        });
-                        break;
-                    }
-                case ActionToIUser.UploadFile:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("filename", out var filename))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.UploadFile, new() {
-                            ["filename"] = filename
-                        });
-                        break;
-                    }
-                case ActionToIUser.GetInfoFile:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("filename", out var filename))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.GetInfoFile, new() {
-                            ["filename"] = filename
-                        });
-                        break;
-                    }
-                case ActionToIUser.CancelOperation:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("operationID", out var operationID))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IManagerAPI, ActionFromIUser.CancelOperation, new() {
-                            ["operationID"] = operationID
-                        });
-                        break;
-                    }
-                case ActionToIUser.OnFocusTagTextblock:
-                    {
-                        if (dict.Count != 2 || !dict.TryGetValue<bool>("GotFocus", out var GotFocus) || !dict.TryGetValue<string>("text", out var text))
-                            throw new My_Exception("no valid params");
-
-                        action = () =>
-                        {
-                            if (GotFocus)
-                            {
-                                if (IsRoomNameNull(out string roomName))
-                                    throw new My_Exception("Room_Name is null");
-
-                                if (!roomManager.TryGetRoom(roomName, out Room? room) || room is null)
-                                    return;
-
-                                OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.ShowUsersTags, new()
-                                {
-                                    ["users"] = room.GetUsers(),
-                                    ["text"] = text
-                                });
-                            }
-                            else
-                            {
-                                OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.HideUsersTags, []);
-                            }
-                        };
-                        break;
-                    }
-                case ActionToIUser.OnSendingMessageTextBox:
-                    {
-                        if (dict.Count != 3 || !dict.TryGetValue<string>("reciever", out var reciever) || !dict.TryGetValue<string>("text", out var text))
-                            throw new My_Exception("no valid params");
-
-                        if (!dict.TryGetValue<My_FileInfo[]>("filesInfos", out var filesInfos))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnSendingMessageTextBox(reciever, text, filesInfos);
-                        break;
-                    }
-                case ActionToIUser.OnProgressHandler:
-                    {
-                        if (dict.Count != 3 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<int>("percent", out var percent))
-                            throw new My_Exception("no valid params");
-
-                        if (!dict.TryGetValue<long>("fileSize", out var fileSize))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnProgressHandler, new() {
-                            ["fileName"] = fileName,
-                            ["percent"] = percent,
-                            ["fileSize"] = fileSize,
-                        });
-                        break;
-                    }
-                case ActionToIUser.OnFileInfoHandler:
-                    {
-                        if (dict.Count != 2 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<long>("fileSize", out var fileSize))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnFileInfoHandler, new() {
-                            ["fileName"] = fileName,
-                            ["fileSize"] = fileSize
-                        });
-                        break;
-                    }
-                case ActionToIUser.OnErrorHandler:
-                    {
-                        if (dict.Count != 2 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<string>("text", out var text))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnErrorHandler, new() {
-                            ["fileName"] = fileName,
-                            ["text"] = text
-                        });
-                        break;
-                    }
-                case ActionToIUser.OnUploadErrorHandler:
-                    {
-                        if (dict.Count != 2 || !dict.TryGetValue<string>("fileName", out var fileName) || !dict.TryGetValue<string>("text", out var text))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnUploadErrorHandler, new() {
-                            ["fileName"] = fileName,
-                            ["text"] = text
-                        });
-                        break;
-                    }
-                case ActionToIUser.GetMicrophonesInfo:
-                    {
-                        if (dict.Count != 0)
-                            throw new My_Exception("no valid params");
-
-                        action = () =>
-                        {
-                            var microphones = voiceManager.GetMicrophoneDevices();
-                            OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnMicrophonesInfo, new() { ["microphones"] = microphones });
-                        };
-                        break;
-                    }
-                case ActionToIUser.OnMicrophonesInfo:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<Dictionary<string, string>>("microphones", out var microphones))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnMicrophonesInfo, new() { ["microphones"] = microphones });
-                        break;
-                    }
-                case ActionToIUser.SelectMicrophoneByName:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("microphone", out var microphone))
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IVoiceManager, ActionFromIUser.OnSelectMicrophoneByName, new() { ["microphone"] = microphone });
-                        break;
-                    }
-                case ActionToIUser.ReloadConnectionServer:
-                    {
-                        if (dict.Count != 0)
-                            throw new My_Exception("no valid params");
-
-                        action = () => OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.ReloadConnectionServer, []);
-                        break;
-                    }
-                default:
-                    throw new My_Exception("no valid ActionFromIUser");
-            }
-
-            return action;
-        }
-        public async void OnInterfacesAction(ActionToIUser action_IUser, Dictionary<string, object> dict) => await Interfaces_Channel.Writer.WriteAsync(new(action_IUser, dict));
-    }
     public partial class My_User : IUser
     {
         internal readonly ServerAPIManager.IManagerAPI managerAPI;
         internal readonly VoiceChatManager.IVoiceManager voiceManager;
         internal readonly UI.IApplicationUI applicationUI;
         internal readonly ServerConnectionManager.IServerConnection serverConnection;
+        internal readonly SettingsLogicManager.ISettingsService settingsService;
+
         internal readonly RoomManager roomManager = new();
 
         readonly CancellationTokenSource cts = new();
@@ -424,13 +531,14 @@ namespace SoZvon.Main_Thread
             voiceManager = new VoiceChatManager.VoiceManager(this);
             serverConnection = new ServerConnectionManager.ConnectionManager(this);
             managerAPI = new ServerAPIManager.API_Manager(this);
+            settingsService = new SettingsLogicManager.SettingsManager(this);
 
             StartProperties();
         }
 
         void StartProperties()
         {
-            //Главный поток интерпритации сообщений
+            //Главный поток и дургие дополнительные потоки
             _ = Main_Thread(cts.Token);
             _ = Read_Messages_Thread(cts.Token);
             _ = ButtonsFunctionCaller(cts.Token);
@@ -439,6 +547,7 @@ namespace SoZvon.Main_Thread
             //Стартовые настройки
             OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnStart, []);
             OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.OnStart, []);
+            OnIUserAction(InterfaceToSend.ISettingsService, ActionFromIUser.OnStart, []);
         }
 
         void OnIUserAction(InterfaceToSend reciever, ActionFromIUser actionIUser, Dictionary<string, object> dict)
@@ -463,6 +572,11 @@ namespace SoZvon.Main_Thread
                 case InterfaceToSend.IManagerAPI:
                     {
                         managerAPI.OnIUserAction(actionIUser, dict);
+                        break;
+                    }
+                case InterfaceToSend.ISettingsService:
+                    {
+                        settingsService.OnIUserAction(actionIUser, dict);
                         break;
                     }
                 default:

@@ -146,7 +146,7 @@ namespace SoZvon.ServerConnectionManager
         readonly Channel<ConnectionAttempt> connection_attempts_channel = Channel.CreateBounded<ConnectionAttempt>(new BoundedChannelOptions(2000) { FullMode = BoundedChannelFullMode.Wait });
 
         readonly CancellationTokenSource cts_main = new();
-        CancellationTokenSource linked_cts_main;
+        CancellationTokenSource linked_cts_main = new();
         CancellationTokenSource? cts_currentOperation = new();
         readonly object lock_currentOperation = new();
 

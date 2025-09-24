@@ -5,7 +5,8 @@
         IServerConnection,
         IManagerAPI,
         IApplicationUI,
-        IVoiceManager
+        IVoiceManager,
+        ISettingsService
     }
     public enum ActionFromIUser : byte
     {
@@ -79,6 +80,17 @@
         OnSelectMicrophoneByName,
         GetMicrophonesInfo,
         OnMicrophonesInfo,
+
+        UpdateUISetting,
+        UpdateUISettings,
+        MakeUISettings,
+        OnHotkeyPressedSettings,
+
+        UpdateSetting,
+        ChangeHasInvalidKeySetting,
+        TrySaveSettings,
+        TryResetToLastSettings,
+        TryResetToDefaultSettings,
     }
     public enum ActionToIUser : byte
     {
@@ -109,7 +121,18 @@
         GetMicrophonesInfo,
         OnMicrophonesInfo,
         SelectMicrophoneByName,
-        ReloadConnectionServer
+        ReloadConnectionServer,
+
+        UpdateUISetting,
+        UpdateUISettings,
+        MakeUISettings,
+        OnHotkeyPressedSettings,
+
+        UpdateSetting,
+        ChangeHasInvalidKeySetting,
+        TrySaveSettings,
+        TryResetToLastSettings,
+        TryResetToDefaultSettings,
     }
     record Action_IUser(ActionFromIUser Action, Dictionary<string, object> Params);
     record Action_Interfaces(ActionToIUser Action, Dictionary<string, object> Params);

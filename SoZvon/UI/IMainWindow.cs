@@ -46,6 +46,12 @@ namespace SoZvon.UI
         void CloseApplication();
         void SelectMicrophoneByName(string name);
 
+        void UpdateSetting<T>(string id, T value);
+        void ChangeHasInvalidKeySetting(bool value);
+        void TrySaveSettings();
+        void TryResetToLastSettings();
+        void TryResetToDefaultSettings();
+
         void MakeNotificationServer(TypeNotification typeNotification, Dictionary<string, object> dict);
         Grid? FindButtonGrid(string name_button, string tag_button = "");
         bool IsWindowFocused();

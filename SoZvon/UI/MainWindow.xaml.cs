@@ -1,21 +1,19 @@
-﻿using SoZvon.SubClasses;
-using SoZvon.UI.SubClasses;
-using System;
-using System.Drawing.Drawing2D;
-using System.Threading.Channels;
+﻿using System.Threading.Channels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-
-using Action_IUser = SoZvon.Main_Thread.Action_IUser;
-using ActionFromIUser = SoZvon.Main_Thread.ActionFromIUser;
-using ActionToIUser = SoZvon.Main_Thread.ActionToIUser;
 using Color = System.Windows.Media.Color;
 using Colors = System.Windows.Media.Colors;
 using SolidColorBrush = System.Windows.Media.SolidColorBrush;
 
 namespace SoZvon.UI
 {
+    using SoZvon.SubClasses;
+    using SubClasses;
+    using Action_IUser = Main_Thread.Action_IUser;
+    using ActionFromIUser = Main_Thread.ActionFromIUser;
+    using ActionToIUser = Main_Thread.ActionToIUser;
+
     public partial class MainWindow
     {
         readonly Channel<Action_IUser> UserUI_Channel = Channel.CreateBounded<Action_IUser>(new BoundedChannelOptions(2000) { FullMode = BoundedChannelFullMode.Wait });
@@ -32,7 +30,7 @@ namespace SoZvon.UI
             Color.FromRgb(255, 127, 80),  // Coral — светлее, чем Tomato
         ];
 
-        async Task UserUI_Channel_Thread(CancellationToken cancellationToken)
+        async Task IUser_Channel_Thread(CancellationToken cancellationToken)
         {
             try
             {
@@ -92,6 +90,7 @@ namespace SoZvon.UI
                         action = () => Make_NotifyMessage(title, message);
                         break;
                     }
+
                 case ActionFromIUser.OnStart:
                     {
                         if (dict.Count != 0)
@@ -225,6 +224,7 @@ namespace SoZvon.UI
                         };
                         break;
                     }
+
                 case ActionFromIUser.Show_SERVER_MessageOnScreen:
                     {
                         if (dict.Count != 3 || !dict.TryGetValue<DateTime>("date", out var date) || !dict.TryGetValue<Guid>("guid", out var guid))
@@ -308,22 +308,6 @@ namespace SoZvon.UI
                         action = () => RoomDeleteOnPanel(roomName);
                         break;
                     }
-                case ActionFromIUser.NotificationOnReadyFileToDownload:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("file_name", out var file_name))
-                            throw new My_Exception("no valid params");
-
-                        action = () => filesManager.CallOnReadyFileToDownload(file_name);
-                        break;
-                    }
-                case ActionFromIUser.NotificationOnFileLoadingToServer:
-                    {
-                        if (dict.Count != 1 || !dict.TryGetValue<string>("file_name", out var file_name))
-                            throw new My_Exception("no valid params");
-
-                        action = () => filesManager.CallOnFileLoadingToServer(file_name);
-                        break;
-                    }
                 case ActionFromIUser.ShowUsersTags:
                     {
                         if (dict.Count != 2 || !dict.TryGetValue<List<Room_User>>("users", out var users) || !dict.TryGetValue<string>("text", out var text))
@@ -352,6 +336,7 @@ namespace SoZvon.UI
                         action = () => ShowPeopleTagsOnPanel(users, text);
                         break;
                     }
+
                 case ActionFromIUser.OnLoginButton:
                     {
                         if (dict.Count != 2 || !dict.TryGetValue<string>("login", out var login) || !dict.TryGetValue<string>("password", out var password))
@@ -411,6 +396,7 @@ namespace SoZvon.UI
                         action = () => notifyMsgManager.CloseNotifyWithTag(tag_error);
                         break;
                     }
+
                 case ActionFromIUser.OnIsConnectedChange:
                     {
                         if (dict.Count != 1 || !dict.TryGetValue<bool>("value", out var value))
@@ -427,6 +413,23 @@ namespace SoZvon.UI
                                 my_Actions.DeleteAll();
                             }
                         };
+                        break;
+                    }
+
+                case ActionFromIUser.NotificationOnReadyFileToDownload:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("file_name", out var file_name))
+                            throw new My_Exception("no valid params");
+
+                        action = () => filesManager.CallOnReadyFileToDownload(file_name);
+                        break;
+                    }
+                case ActionFromIUser.NotificationOnFileLoadingToServer:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("file_name", out var file_name))
+                            throw new My_Exception("no valid params");
+
+                        action = () => filesManager.CallOnFileLoadingToServer(file_name);
                         break;
                     }
                 case ActionFromIUser.SetOperationId:
@@ -472,6 +475,7 @@ namespace SoZvon.UI
                         action = () => filesManager.OnUploadErrorHandler(fileName, text);
                         break;
                     }
+
                 case ActionFromIUser.OnMicrophonesInfo:
                     {
                         if (dict.Count != 1 || !dict.TryGetValue<Dictionary<string, string>>("microphones", out var microphones))
@@ -480,6 +484,39 @@ namespace SoZvon.UI
                         action = () => settings_page.OnMicrophonesInfo(microphones);
                         break;
                     }
+                case ActionFromIUser.UpdateUISetting:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<string>("id", out var id))
+                            throw new My_Exception("no valid params");
+
+                        action = () => settings_page.UpdateUI(id);
+                        break;
+                    }
+                case ActionFromIUser.UpdateUISettings:
+                    {
+                        if (dict.Count != 0)
+                            throw new My_Exception("no valid params");
+
+                        action = settings_page.UpdateUIs;
+                        break;
+                    }
+                case ActionFromIUser.MakeUISettings:
+                    {
+                        if (dict.Count != 1 || !dict.TryGetValue<List<SettingsLogicManager.SettingsLogic.ISetting>>("settingsUI", out var settingsUI))
+                            throw new My_Exception("no valid params");
+
+                        action = () => settings_page.MakeSettingsUI(settingsUI);
+                        break;
+                    }
+                case ActionFromIUser.OnHotkeyPressedSettings:
+                    {
+                        if (dict.Count != 2 || !dict.TryGetValue<string>("id", out var id) || !dict.TryGetValue<bool>("UseFormCapture", out var UseFormCapture))
+                            throw new My_Exception("no valid params");
+
+                        action = () => settings_page.OnHotkeyPressed(id, UseFormCapture);
+                        break;
+                    }
+
                 default: 
                     throw new My_Exception("no valid ActionFromIUser");
             }
@@ -526,7 +563,7 @@ namespace SoZvon.UI
 
             _ = Main_Thread(cts.Token);
             _ = Pressing_Button_Thread(cts.Token);
-            _ = UserUI_Channel_Thread(cts.Token);
+            _ = IUser_Channel_Thread(cts.Token);
 
             InitializeComponent();
 
@@ -733,6 +770,17 @@ namespace SoZvon.UI
             });
         }
         public void ChangeVisibility_Grid_PeopleTags(Visibility visibility) => my_Actions.ChangeVisibility_Grid_PeopleTags(visibility);
+
+        public void UpdateSetting<T>(string id, T value) => User.OnInterfacesAction(ActionToIUser.UpdateSetting, new() {
+            ["id"] = id,
+            ["value"] = value!
+        });
+        public void ChangeHasInvalidKeySetting(bool value) => User.OnInterfacesAction(ActionToIUser.ChangeHasInvalidKeySetting, new() {
+            ["value"] = value
+        });
+        public void TrySaveSettings() => User.OnInterfacesAction(ActionToIUser.TrySaveSettings, []);
+        public void TryResetToLastSettings() => User.OnInterfacesAction(ActionToIUser.TryResetToLastSettings, []);
+        public void TryResetToDefaultSettings() => User.OnInterfacesAction(ActionToIUser.TryResetToDefaultSettings, []);
 
         public void SelectMicrophoneByName(string name) => User.OnInterfacesAction(ActionToIUser.SelectMicrophoneByName, new() {
             ["microphone"] = name
