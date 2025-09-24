@@ -200,10 +200,10 @@ namespace SoZvon.SettingsLogicManager
             AddDefaultValueSetting("ServerAutoConnect", "false");
 
             AddDefaultValueHotkeySetting("MicToggle", new(Key.M, ModifierKeys.Control, false));
-            AddDefaultValueHotkeySetting("ExitApp", new(Key.Q, ModifierKeys.Control | ModifierKeys.Alt, true));
+            AddDefaultValueHotkeySetting("ExitApp", new(Key.Q, ModifierKeys.Control | ModifierKeys.Alt, false));
             AddDefaultValueHotkeySetting("Reconnect", new(Key.A, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt, true));
-            AddDefaultValueHotkeySetting("AppSoundUp", new(Key.Up, ModifierKeys.Control | ModifierKeys.Shift, true));
-            AddDefaultValueHotkeySetting("AppSoundDown", new(Key.Down, ModifierKeys.Control | ModifierKeys.Shift, true));
+            AddDefaultValueHotkeySetting("AppSoundUp", new(Key.Up, ModifierKeys.Control | ModifierKeys.Shift, false));
+            AddDefaultValueHotkeySetting("AppSoundDown", new(Key.Down, ModifierKeys.Control | ModifierKeys.Shift, false));
 
             saveRepository.StartProperties(defaultSettings.ToDictionary(), defaultHotkeys.ToDictionary());
 
