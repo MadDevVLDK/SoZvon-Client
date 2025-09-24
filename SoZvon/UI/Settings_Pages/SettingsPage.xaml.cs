@@ -1,4 +1,7 @@
-﻿using System.Collections.Frozen;
+﻿using Microsoft.EntityFrameworkCore;
+using System;
+using System.Collections.Frozen;
+using System.ComponentModel.DataAnnotations;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,6 +11,42 @@ using Keys = System.Windows.Forms.Keys;
 
 namespace SoZvon.UI.Room_Pages
 {
+    public class AppSetting
+    {
+        [Key]
+        [MaxLength(100)]
+        public string Id { get; set; } = string.Empty;
+
+        [Required]
+        public string Value { get; set; } = string.Empty;
+
+        public DateTime LastModified { get; set; } = DateTime.UtcNow;
+    }
+    public class AppDbContext : DbContext
+    {
+        public DbSet<AppSetting> Settings { get; set; }
+
+        public AppDbContext() { }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseSqlite("Data Source=settings.db");
+            }
+        }
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<AppSetting>(entity => {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).HasMaxLength(100);
+                entity.Property(e => e.Value).IsRequired();
+                entity.Property(e => e.LastModified).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+        }
+    }
+
     public class GlobalHotKeyManager
     {
         [DllImport("user32.dll")] static extern short GetAsyncKeyState(Keys vkey);
@@ -508,7 +547,7 @@ namespace SoZvon.UI.Room_Pages
 
             return (key, modifiers);
         }
-        static string ToStringRepresentation(Key key, ModifierKeys modifier)
+        public static string ToStringRepresentation(Key key, ModifierKeys modifier)
         {
             string text = "";
 
@@ -533,11 +572,177 @@ namespace SoZvon.UI.Room_Pages
 
         void OnHotkeyPressed(IHotkeySettings setting, bool oldUseFormCapture);
     }
+
+    public class SettingsRepository
+    {
+        private readonly AppDbContext _context;
+
+        public SettingsRepository()
+        {
+            _context = new AppDbContext();
+            InitializeDatabase();
+        }
+
+        private void InitializeDatabase()
+        {
+            try
+            {
+                SQLitePCL.raw.SetProvider(new SQLitePCL.());
+
+                _context.Database.EnsureCreated();
+
+                // Создаем базовые настройки если их нет
+                if (!_context.Settings.Any())
+                {
+                    CreateDefaultSettings();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error initializing database: {ex.Message}");
+                throw;
+            }
+        }
+
+        private void CreateDefaultSettings()
+        {
+            var defaultSettings = new List<AppSetting>
+            {
+                new AppSetting { Id = "Theme", Value = "light" },
+                new AppSetting { Id = "Microphones", Value = "auto" },
+                new AppSetting { Id = "NotifyApp", Value = "false" },
+                new AppSetting { Id = "ServerAutoConnect", Value = "false" },
+                new AppSetting { Id = "MicToggle_Hotkey", Value = "Ctrl+M" },
+                new AppSetting { Id = "ExitApp_Hotkey", Value = "Ctrl+Alt+Q" },
+                new AppSetting { Id = "AutoConnect_Hotkey", Value = "Ctrl+Shift+Alt+A" },
+                new AppSetting { Id = "MicToggle_Capture", Value = "false" },
+                new AppSetting { Id = "ExitApp_Capture", Value = "true" },
+                new AppSetting { Id = "AutoConnect_Capture", Value = "true" }
+            };
+
+            _context.Settings.AddRange(defaultSettings);
+            _context.SaveChanges();
+        }
+
+        public void SaveSetting(string id, string value)
+        {
+            try
+            {
+                var existingSetting = _context.Settings.FirstOrDefault(s => s.Id == id);
+
+                if (existingSetting != null)
+                {
+                    existingSetting.Value = value;
+                    existingSetting.LastModified = DateTime.UtcNow;
+                }
+                else
+                {
+                    _context.Settings.Add(new AppSetting { Id = id, Value = value });
+                }
+
+                _context.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving setting {id}: {ex.Message}");
+            }
+        }
+
+        public string? GetSetting(string id)
+        {
+            try
+            {
+                return _context.Settings
+                    .Where(s => s.Id == id)
+                    .Select(s => s.Value)
+                    .FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting setting {id}: {ex.Message}");
+                return null;
+            }
+        }
+
+        public string GetSetting(string id, string defaultValue)
+        {
+            try
+            {
+                return _context.Settings
+                    .Where(s => s.Id == id)
+                    .Select(s => s.Value)
+                    .FirstOrDefault() ?? defaultValue;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting setting {id}: {ex.Message}");
+                return defaultValue;
+            }
+        }
+
+        public Dictionary<string, string> GetAllSettings()
+        {
+            var settings = new Dictionary<string, string>();
+
+            try
+            {
+                var allSettings = _context.Settings.ToList();
+                foreach (var setting in allSettings)
+                {
+                    settings[setting.Id] = setting.Value;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting all settings: {ex.Message}");
+            }
+
+            return settings;
+        }
+
+        public void DeleteSetting(string id)
+        {
+            try
+            {
+                var setting = _context.Settings.FirstOrDefault(s => s.Id == id);
+                if (setting != null)
+                {
+                    _context.Settings.Remove(setting);
+                    _context.SaveChanges();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error deleting setting {id}: {ex.Message}");
+            }
+        }
+
+        public void ClearAllSettings()
+        {
+            try
+            {
+                _context.Settings.RemoveRange(_context.Settings);
+                _context.SaveChanges();
+                CreateDefaultSettings(); // Восстанавливаем настройки по умолчанию
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error clearing settings: {ex.Message}");
+            }
+        }
+
+        public void Dispose()
+        {
+            _context?.Dispose();
+        }
+    }
     public class SettingsManager(ISettingsPage settingsPage) : ISettingsManager
     {
         readonly ISettingsPage settingsPage = settingsPage;
         readonly GlobalHotKeyManager globalHotKeyManager = new();
+        readonly SettingsRepository settingsRepository = new();
 
+        bool isLoading = true;
         bool hasInvalidKey = false;
         string? currentHotkeyButtonId;
 
@@ -554,23 +759,41 @@ namespace SoZvon.UI.Room_Pages
             settingsLock.EnterWriteLock();
             try
             {
-                AddComboBox("Theme", "light", "Тема оформления", new() {
+                isLoading = true;
+
+                // Загружаем сохраненные настройки
+                var savedSettings = settingsRepository.GetAllSettings();
+
+                AddComboBox("Theme", GetSavedValue(savedSettings, "Theme", "light"), "Тема оформления", new() {
                     ["light"] = "Светлая"
                 });
 
-                AddComboBox("Microphones", "auto", "Микрофон", new() {
+                AddComboBox("Microphones", GetSavedValue(savedSettings, "Microphones", "auto"), "Микрофон", new() {
                     ["auto"] = "По умолчанию"
                 });
 
-                AddCheckBox("NotifyApp", false, "Включить уведомления");
-                AddCheckBox("ServerAutoConnect", false, "Автоподключение к серверу при входе в приложение");
+                AddCheckBox("NotifyApp", bool.Parse(GetSavedValue(savedSettings, "NotifyApp", "false")), "Включить уведомления");
+                AddCheckBox("ServerAutoConnect", bool.Parse(GetSavedValue(savedSettings, "ServerAutoConnect", "false")), "Автоподключение к серверу при входе в приложение");
 
-                AddHotkey("MicToggle", Key.M, ModifierKeys.Control, "Вкл/Выкл микрофон", false);
-                AddHotkey("ExitApp", Key.Q, ModifierKeys.Control | ModifierKeys.Alt, "Выход из приложения");
-                AddHotkey("AutoConnect", Key.A, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt, "Переподключиться к серверу");
+
+                // Загрузка горячих клавиш
+                var micToggleHotkey = ParseHotkeyString(GetSavedValue(savedSettings, "MicToggle_Hotkey", "Ctrl+M"));
+                var exitAppHotkey = ParseHotkeyString(GetSavedValue(savedSettings, "ExitApp_Hotkey", "Ctrl+Alt+Q"));
+                var autoConnectHotkey = ParseHotkeyString(GetSavedValue(savedSettings, "AutoConnect_Hotkey", "Ctrl+Shift+Alt+A"));
+
+                var micToggleCapture = bool.Parse(GetSavedValue(savedSettings, "MicToggle_Capture", "false"));
+                var exitAppCapture = bool.Parse(GetSavedValue(savedSettings, "ExitApp_Capture", "true"));
+                var autoConnectCapture = bool.Parse(GetSavedValue(savedSettings, "AutoConnect_Capture", "true"));
+
+                AddHotkey("MicToggle", micToggleHotkey.Key, micToggleHotkey.Modifiers, "Вкл/Выкл микрофон", micToggleCapture);
+                AddHotkey("ExitApp", exitAppHotkey.Key, exitAppHotkey.Modifiers, "Выход из приложения", exitAppCapture);
+                AddHotkey("AutoConnect", autoConnectHotkey.Key, autoConnectHotkey.Modifiers, "Переподключиться к серверу", autoConnectCapture);
 
                 CreateUIs(panel);
                 SaveCurrentSettings();
+
+                isLoading = false;
+
                 UpdateUIs();
 
                 _ = globalHotKeyManager.ReadKeysAsync();
@@ -579,6 +802,52 @@ namespace SoZvon.UI.Room_Pages
             finally
             {
                 settingsLock.ExitWriteLock();
+            }
+        }
+        static string GetSavedValue(Dictionary<string, string> savedSettings, string key, string defaultValue)
+        {
+            return savedSettings.TryGetValue(key, out var value) ? value : defaultValue;
+        }
+        static (Key Key, ModifierKeys Modifiers) ParseHotkeyString(string hotkeyString)
+        {
+            Key key = Key.None;
+            ModifierKeys modifiers = ModifierKeys.None;
+
+            var parts = hotkeyString.Split('+');
+            foreach (var part in parts)
+            {
+                var trimmed = part.Trim();
+                if (trimmed.Equals("Ctrl", StringComparison.OrdinalIgnoreCase))
+                    modifiers |= ModifierKeys.Control;
+                else if (trimmed.Equals("Alt", StringComparison.OrdinalIgnoreCase))
+                    modifiers |= ModifierKeys.Alt;
+                else if (trimmed.Equals("Shift", StringComparison.OrdinalIgnoreCase))
+                    modifiers |= ModifierKeys.Shift;
+                else if (Enum.TryParse<Key>(trimmed, true, out var parsedKey))
+                    key = parsedKey;
+            }
+
+            return (key, modifiers);
+        }
+        void SaveSettingToDatabase(ISetting setting)
+        {
+            if (isLoading) return; // Не сохраняем при загрузке
+
+            switch (setting)
+            {
+                case ComboBoxSetting comboBox:
+                    settingsRepository.SaveSetting(comboBox.Id, comboBox.SelectedValue);
+                    break;
+
+                case CheckboxSetting checkbox:
+                    settingsRepository.SaveSetting(checkbox.Id, checkbox.IsChecked.ToString());
+                    break;
+
+                case HotkeySetting hotkey:
+
+                    settingsRepository.SaveSetting($"{hotkey.Id}_Hotkey", HotkeySetting.ToStringRepresentation(hotkey.Key, hotkey.Modifiers));
+                    settingsRepository.SaveSetting($"{hotkey.Id}_Capture", hotkey.UseFormCapture.ToString());
+                    break;
             }
         }
 
@@ -625,6 +894,9 @@ namespace SoZvon.UI.Room_Pages
                 foreach (var setting in currentSettings.Values)
                 {
                     setting.SaveCurrentState();
+
+                    // Сохраняем в базу данных
+                    SaveSettingToDatabase(setting);
                 }
 
                 SaveCurrentSettings();
