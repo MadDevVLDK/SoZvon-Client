@@ -688,6 +688,7 @@ namespace SoZvon.UI.Room_Pages
 
             AddDefaultValueHotkeySetting("MicToggle", new(Key.M, ModifierKeys.Control, false));
             AddDefaultValueHotkeySetting("ExitApp", new(Key.Q, ModifierKeys.Control | ModifierKeys.Alt, true));
+            AddDefaultValueHotkeySetting("Reconnect", new(Key.A, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt, true));
             AddDefaultValueHotkeySetting("AppSoundUp", new(Key.Up, ModifierKeys.Control | ModifierKeys.Shift, true));
             AddDefaultValueHotkeySetting("AppSoundDown", new(Key.Down, ModifierKeys.Control | ModifierKeys.Shift, true));
 
@@ -702,7 +703,7 @@ namespace SoZvon.UI.Room_Pages
 
             MakeFastHotkeySetting("MicToggle", "Вкл/Выкл микрофон");
             MakeFastHotkeySetting("ExitApp", "Выход из приложения");
-            MakeFastHotkeySetting("Reconnect", "Переподключиться к серверу");
+            MakeFastHotkeySetting("Reconnect", "Переподключиться к серверу", false);
             MakeFastHotkeySetting("AppSoundUp", "Увеличить звук в приложении", true, 300, 50);
             MakeFastHotkeySetting("AppSoundDown", "Уменьшить звук в приложении", true, 300, 50);
 
