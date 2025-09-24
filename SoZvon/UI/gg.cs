@@ -44,62 +44,163 @@ namespace SoZvon.UI.Room_Pages
         void OnHotkeyPressed(string id);
     }
 
+    public class HotkeyState
+    {
+        public IHotkeySettings Settings { get; set; }
+        public DateTime FirstPressTime { get; set; }
+        public double TimeSinceFirstPress { get; set; } // ms
+        public double TimeSinceLastRepeat { get; set; } // ms
+        public int RepeatCount { get; set; }
+    }
     public class GlobalHotKeyManager
     {
-        [DllImport("user32.dll")] static extern short GetAsyncKeyState(Keys vkey);
+        [DllImport("user32.dll")] 
+        static extern short GetAsyncKeyState(Keys vkey);
 
-        readonly Dictionary<string, IHotkeySettings> currentKeys = [];
-        readonly CancellationToken cts = new();
+
+        readonly Dictionary<string, HotkeyState> activeHotkeys = [];
+        readonly Dictionary<string, IHotkeySettings> registeredHotkeys = [];
+
+        readonly CancellationTokenSource cts = new();
         readonly object currentKeys_lock = new();
 
         bool NeedCheck = false;
 
-        public void AddorUpdateHotkey(IHotkeySettings hotkeySettings)
+        public void AddOrUpdateHotkey(IHotkeySettings hotkeySettings)
         {
             lock (currentKeys_lock)
-                currentKeys[hotkeySettings.Id] = hotkeySettings;
+            {
+                registeredHotkeys[hotkeySettings.Id] = hotkeySettings;
+            }
         }
         public void ClearAndAddRangeHotkey(List<IHotkeySettings> hotkeySettings)
         {
             lock (currentKeys_lock)
             {
                 NeedCheck = false;
-
-                currentKeys.Clear();
+                registeredHotkeys.Clear();
+                activeHotkeys.Clear();
 
                 foreach (var hotkey in hotkeySettings)
                 {
-                    currentKeys[hotkey.Id] = hotkey;
+                    registeredHotkeys[hotkey.Id] = hotkey;
                 }
 
                 NeedCheck = true;
             }
-                
         }
+
         public async Task ReadKeysAsync()
         {
             try
             {
+                var lastCheckTime = DateTime.Now;
+                var pressedKeys = new HashSet<int>();
+
                 while (!cts.IsCancellationRequested)
                 {
+                    var currentTime = DateTime.Now;
+                    var elapsed = (currentTime - lastCheckTime).TotalMilliseconds;
+
                     lock (currentKeys_lock)
                     {
                         if (NeedCheck)
                         {
-                            foreach (IHotkeySettings value in currentKeys.Values)
-                            {
-                                if (!IsKeyCombinationPressed(value.OldKey, value.OldModifiers))
-                                    continue;
+                            // Обновляем состояние всех активных горячих клавиш (для auto-repeat)
+                            UpdateActiveHotkeys(elapsed);
 
-                                value.OnHotkeyPressed();
-                            }
+                            // Проверяем все зарегистрированные горячие клавиши
+                            CheckRegisteredHotkeys(currentTime, pressedKeys);
                         }
                     }
 
-                    await Task.Delay(100, cts);
+                    lastCheckTime = currentTime;
+                    await Task.Delay(100, cts.Token);
                 }
             }
+            catch (OperationCanceledException) { }
             catch { }
+        }
+
+        void UpdateActiveHotkeys(double elapsedMs)
+        {
+            var keysToRemove = new List<string>();
+
+            foreach (var kvp in activeHotkeys)
+            {
+                var state = kvp.Value;
+                var settings = state.Settings;
+
+                if (!settings.SupportsAutoRepeat) 
+                    continue;
+
+                state.TimeSinceFirstPress += elapsedMs;
+                state.TimeSinceLastRepeat += elapsedMs;
+
+                // Проверяем, прошла ли начальная задержка
+                if (state.TimeSinceFirstPress >= settings.InitialRepeatDelay)
+                {
+                    // Проверяем, прошла ли задержка между повторениями
+                    if (state.TimeSinceLastRepeat >= settings.RepeatInterval)
+                    {
+                        // settings.OnHotkeyPressed() надо true в параметр
+                        settings.OnHotkeyPressed();
+                        state.TimeSinceLastRepeat = 0;
+                        state.RepeatCount++;
+                    }
+                }
+
+                // Автоматически удаляем если клавиша больше не нажата
+                if (!IsKeyCombinationPressed(settings.OldKey, settings.OldModifiers))
+                {
+                    keysToRemove.Add(kvp.Key);
+                }
+            }
+
+            // Удаляем неактивные горячие клавиши
+            foreach (var key in keysToRemove)
+            {
+                activeHotkeys.Remove(key);
+            }
+        }
+        void CheckRegisteredHotkeys(DateTime currentTime, HashSet<int> pressedKeys)
+        {
+            foreach (var settings in registeredHotkeys.Values)
+            {
+                var hotkeyKey = settings.Id;
+
+                if (IsKeyCombinationPressed(settings.OldKey, settings.OldModifiers))
+                {
+                    // Если горячая клавиша нажата впервые
+                    if (!activeHotkeys.ContainsKey(hotkeyKey))
+                    {
+                        var newState = new HotkeyState
+                        {
+                            Settings = settings,
+                            FirstPressTime = currentTime,
+                            TimeSinceFirstPress = 0,
+                            TimeSinceLastRepeat = 0,
+                            RepeatCount = 0
+                        };
+
+                        activeHotkeys[hotkeyKey] = newState;
+
+                        // Выполняем действие при первом нажатии
+                        // settings.OnHotkeyPressed() надо false в параметр
+                        settings.OnHotkeyPressed();
+
+                        // Если не поддерживает auto-repeat, сразу удаляем из активных
+                        if (!settings.SupportsAutoRepeat)
+                        {
+                            activeHotkeys.Remove(hotkeyKey);
+                        }
+                    }
+                }
+                else
+                {
+                    activeHotkeys.Remove(hotkeyKey);
+                }
+            }
         }
 
         static bool IsKeyPressed(Keys key)
@@ -126,12 +227,25 @@ namespace SoZvon.UI.Room_Pages
         public void StartChecking()
         {
             lock (currentKeys_lock)
+            {
                 NeedCheck = true;
+            }
         }
         public void StopChecking()
         {
             lock (currentKeys_lock)
+            {
                 NeedCheck = false;
+                activeHotkeys.Clear();
+            }
+        }
+
+        public void Dispose()
+        {
+            cts.Cancel();
+            cts.Dispose();
+            activeHotkeys.Clear();
+            registeredHotkeys.Clear();
         }
     }
     public class XmlSettingsRepository
@@ -574,7 +688,8 @@ namespace SoZvon.UI.Room_Pages
 
             AddDefaultValueHotkeySetting("MicToggle", new(Key.M, ModifierKeys.Control, false));
             AddDefaultValueHotkeySetting("ExitApp", new(Key.Q, ModifierKeys.Control | ModifierKeys.Alt, true));
-            AddDefaultValueHotkeySetting("Reconnect", new(Key.A, ModifierKeys.Control | ModifierKeys.Shift | ModifierKeys.Alt, true));
+            AddDefaultValueHotkeySetting("AppSoundUp", new(Key.Up, ModifierKeys.Control | ModifierKeys.Shift, true));
+            AddDefaultValueHotkeySetting("AppSoundDown", new(Key.Down, ModifierKeys.Control | ModifierKeys.Shift, true));
 
             saveRepository.StartProperties(defaultSettings.ToDictionary(), defaultHotkeys.ToDictionary());
 
@@ -588,6 +703,8 @@ namespace SoZvon.UI.Room_Pages
             MakeFastHotkeySetting("MicToggle", "Вкл/Выкл микрофон");
             MakeFastHotkeySetting("ExitApp", "Выход из приложения");
             MakeFastHotkeySetting("Reconnect", "Переподключиться к серверу");
+            MakeFastHotkeySetting("AppSoundUp", "Увеличить звук в приложении", true, 300, 50);
+            MakeFastHotkeySetting("AppSoundDown", "Уменьшить звук в приложении", true, 300, 50);
 
             SaveCurrentStates();
             CheckForDuplicateHotkeys(); // Проверяем дубликаты после загрузки
@@ -628,12 +745,12 @@ namespace SoZvon.UI.Room_Pages
 
             currentSettings[id] = new CheckboxSetting(id, description, bool.Parse(value), bool.Parse(defaultValue));
         }
-        void MakeFastHotkeySetting(string id, string description)
+        void MakeFastHotkeySetting(string id, string description, bool supportsAutoRepeat = false, int initialRepeatDelay = 300, int repeatInterval = 50)
         {
             var defaultValue = GetDefaultHotkey(id);
             var value = saveRepository.GetHotkey(id);
 
-            currentSettings[id] = new HotkeySetting(id, description, value, defaultValue, this);
+            currentSettings[id] = new HotkeySetting(id, description, value, defaultValue, supportsAutoRepeat, initialRepeatDelay, repeatInterval, this);
         }
 
         public void ChangeHasInvalidKey(bool value)

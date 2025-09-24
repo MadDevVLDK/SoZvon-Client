@@ -1,5 +1,4 @@
-﻿using System.Configuration;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -100,15 +99,23 @@ namespace SoZvon.UI.Room_Pages
     public interface IHotkeySettings
     {
         string Id { get; }
+        bool SupportsAutoRepeat { get; }
+        int InitialRepeatDelay { get; } // ms
+        int RepeatInterval { get; } // ms
         Key OldKey { get; }
         ModifierKeys OldModifiers { get; }
         void OnHotkeyPressed();
     }
+    
     public class HotkeySetting: SettingBase, IHotkeySettings
     {
         readonly ISettingsService settingsService;
 
         public bool IsDuplicate { get; set; } = false;
+        public bool SupportsAutoRepeat { get; }
+        public int InitialRepeatDelay { get; } // ms
+        public int RepeatInterval { get; } // ms
+
 
         public Key Key { get; set; }
         public ModifierKeys Modifiers { get; set; }
@@ -125,6 +132,12 @@ namespace SoZvon.UI.Room_Pages
 
         public HotkeySetting(HotkeySetting hotkeySetting) : base(hotkeySetting.Id, hotkeySetting.Description)
         {
+            IsDuplicate = hotkeySetting.IsDuplicate;
+
+            SupportsAutoRepeat = hotkeySetting.SupportsAutoRepeat;
+            InitialRepeatDelay = hotkeySetting.InitialRepeatDelay;
+            RepeatInterval = hotkeySetting.RepeatInterval;
+
             Key = hotkeySetting.Key;
             Modifiers = hotkeySetting.Modifiers;
             UseFormCapture = hotkeySetting.UseFormCapture;
@@ -139,8 +152,12 @@ namespace SoZvon.UI.Room_Pages
 
             settingsService = hotkeySetting.settingsService;
         }
-        public HotkeySetting(string id, string description, Tuple<Key, ModifierKeys, bool> _current, Tuple<Key, ModifierKeys, bool> _default, ISettingsService _settingsService) : base(id, description)
+        public HotkeySetting(string id, string description, Tuple<Key, ModifierKeys, bool> _current, Tuple<Key, ModifierKeys, bool> _default, bool supportsAutoRepeat, int initialRepeatDelay, int repeatInterval, ISettingsService _settingsService) : base(id, description)
         {
+            SupportsAutoRepeat = supportsAutoRepeat;
+            InitialRepeatDelay = initialRepeatDelay;
+            RepeatInterval = repeatInterval;
+
             Key = _current.Item1;
             Modifiers = _current.Item2;
             UseFormCapture = _current.Item3;
