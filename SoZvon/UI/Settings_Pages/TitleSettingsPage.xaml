@@ -158,12 +158,12 @@
                     <TextBlock Tag="Text" TextAlignment="Center" Margin="15 15" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Language="ru-ru" FontSize="19" FontFamily="Comic Sans MS"><Run Language="ru-ru" Text="Аккаунт"/></TextBlock>
                 </Grid>
 
-                <Grid VerticalAlignment="Top" Name="MainSettings">
+                <Grid VerticalAlignment="Top" Name="MainSettings" Tag="TitleSettings_Button">
                     <Rectangle Tag="Background" Fill="#FFFFD793" StrokeThickness="1" Stroke="#a28d6a" Margin="0 -1 0 0"/>
                     <TextBlock Tag="Text" TextAlignment="Center" Margin="15 15" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Language="ru-ru" FontSize="19" FontFamily="Comic Sans MS"><Run Language="ru-ru" Text="Базовые настройки"/></TextBlock>
                 </Grid>
 
-                <Grid VerticalAlignment="Top" Name="HotkeySettings">
+                <Grid VerticalAlignment="Top" Name="HotkeySettings" Tag="TitleSettings_Button">
                     <Rectangle Tag="Background" Fill="#FFFFD793" StrokeThickness="1" Stroke="#a28d6a" Margin="0 -1 0 0"/>
                     <TextBlock Tag="Text" TextAlignment="Center" Margin="15 15" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" Language="ru-ru" FontSize="19" FontFamily="Comic Sans MS"><Run Language="ru-ru" Text="Горячие клавиши"/></TextBlock>
                 </Grid>

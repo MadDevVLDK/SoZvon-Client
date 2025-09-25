@@ -37,8 +37,8 @@ namespace SoZvon.UI
     {
         public bool CanPressButton = true;
 
-        Dictionary<string, IButtonInfo> buttons;
-        Dictionary<string, IButtonInfo> buttons_with_state;
+        Dictionary<string, IButtonInfo> buttons = null!;
+        Dictionary<string, IButtonInfo> buttons_with_state = null!;
         readonly IMainWindow mainWindow;
 
         string _active_button = "";

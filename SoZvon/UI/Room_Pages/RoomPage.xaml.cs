@@ -1,4 +1,6 @@
-﻿using SoZvon.SubClasses;
+﻿using Microsoft.VisualBasic.ApplicationServices;
+using SoZvon.Main_Thread;
+using SoZvon.SubClasses;
 using SoZvon.UI.My_Controls;
 using SoZvon.UI.SubClasses;
 using System;
@@ -57,6 +59,10 @@ namespace SoZvon.UI.Room_Pages
             Grid_Users_Tags.GotFocus += IsFocusable_TagTextblock;
 
             HideRoomInfoPanel.MouseUp += (_, _) => My_Animations.VoicePanel_Animation(this, HideRoomInfoPanel);
+
+            ChangeVisibility_Grid_PeopleTags(Visibility.Collapsed);
+            Textbox_PrivateMsg_IsEnabled(false);
+            Textbox_IsEnabled(false);
         }
         
         void TagGrid_PreviewKeyDown(object sender, KeyEventArgs e)
@@ -119,9 +125,27 @@ namespace SoZvon.UI.Room_Pages
         }
         public void IsFocusable_TagTextblock(object sender, RoutedEventArgs e)
         {
-            mainWindow.IsFocusable_TagTextblock(sender, e.RoutedEvent.Name == "GotFocus", IsEntered_TagsPeople_TextBox_Grid, TabPressed);
+            bool GotFocus = e.RoutedEvent.Name == "GotFocus";
+
+            if (!GotFocus)
+            {
+                bool canProcessHiding = (sender is System.Windows.Controls.TextBox or Grid) && (!IsEntered_TagsPeople_TextBox_Grid || TabPressed);
+
+                if (!canProcessHiding)
+                    return;
+            }
+            else if (!(GotFocus && sender is TextBox && Grid_Users_Tags.Visibility == Visibility.Collapsed))
+            {
+                return;
+            }
+
+            string text = Textbox_PrivateMsg.Text;
+
+            mainWindow.IsFocusable_TagTextblock(GotFocus, text);
             TabPressed = false;
         }
+        public void ChangeVisibility_Grid_PeopleTags(Visibility visibility) => Grid_Users_Tags.Visibility = visibility;
+
         public void Textbox_PrivateMsg_IsEnabled(bool state)
         {
             Textbox_PrivateMsg.IsEnabled = state;

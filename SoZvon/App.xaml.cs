@@ -4,7 +4,7 @@ namespace SoZvon
 {
     public partial class App : Application
     {
-        public Main_Thread.My_User User { get; private set; }
+        public Main_Thread.My_User User { get; private set; } = null!;
 
         protected override void OnStartup(StartupEventArgs e)
         {

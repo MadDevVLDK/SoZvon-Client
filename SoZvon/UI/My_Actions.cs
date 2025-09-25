@@ -95,9 +95,6 @@ namespace SoZvon.UI
         readonly SelfSortingStringList users_logins = [];
         readonly SelfSortingStringList users_logins_voice_chat = [];
 
-        // Методы для работы с тегами пользователей
-        public void ChangeVisibility_Grid_PeopleTags(Visibility visibility) => room_page.Grid_Users_Tags.Visibility = visibility;
-
         // Методы для работы с комнатами
         public void RoomsAddToPanel(List<Room> rooms_on_server)
         {
@@ -369,7 +366,7 @@ namespace SoZvon.UI
             DeletePeopleTagsOnPanel();
 
             if (room_page.Textbox_PrivateMsg.IsFocused || room_page.Grid_Users_Tags.IsFocused) 
-                ChangeVisibility_Grid_PeopleTags(Visibility.Visible);
+                room_page.ChangeVisibility_Grid_PeopleTags(Visibility.Visible);
 
             foreach (Room_User user in users_on_room)
             {
@@ -627,7 +624,8 @@ namespace SoZvon.UI
             string time_text = Encoding.UTF8.GetString("🗴"u8.ToArray());
             Color background_color = Color.FromRgb(245, 242, 255);
 
-            if (date != DateTime.MinValue) time_text = date.ToString("HH:mm");
+            if (date != DateTime.MinValue) 
+                time_text = date.ToString("HH:mm");
 
             Check_DATE(date, MessageOnScreen.MY);
 
@@ -928,7 +926,12 @@ namespace SoZvon.UI
             mainWindow.rightPanel_ref.Navigate(page);
         }
 
-        public void OnRoomExit()
+
+        public void OnStart()
+        {
+            
+        }
+        public void OnExitRoom()
         {
             UsersDeleteOnPanel();
             DeleteMessagesOnScreen();
@@ -966,6 +969,5 @@ namespace SoZvon.UI
         TitleSettingsPage,    // Панель с заголовками настроек
         SettingsPage,    // Панель с настройками
     }
-
     public enum Panel_Type : byte { RoomPanels, SettingsPanels }
 }

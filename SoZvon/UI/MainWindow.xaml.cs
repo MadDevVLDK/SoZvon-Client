@@ -10,6 +10,8 @@ namespace SoZvon.UI
 {
     using SoZvon.SubClasses;
     using SubClasses;
+    using System.Windows.Media.Animation;
+    using System.Windows.Threading;
     using Action_IUser = Main_Thread.Action_IUser;
     using ActionFromIUser = Main_Thread.ActionFromIUser;
     using ActionToIUser = Main_Thread.ActionToIUser;
@@ -130,8 +132,8 @@ namespace SoZvon.UI
 
                         action = () =>
                         {
-                            OnEnterExitVoiceChat(true);
-                            UserVoiceChatAddToPanel(user);
+                            my_Buttons.Fast_Button_Appearence_Change("Join_VoiceChat_Button", Button_Color_Type.Light, true);
+                            my_Actions.UserVoiceChatAddToPanel(user);
                         };
                         break;
                     }
@@ -150,8 +152,8 @@ namespace SoZvon.UI
 
                         action = () =>
                         {
-                            OnSpeakingVoiceChat(false);
-                            OnEnterExitVoiceChat(false);
+                            my_Buttons.Fast_Button_Appearence_Change("Join_VoiceChat_Button", Button_Color_Type.Light, false);
+                            my_Buttons.Fast_Button_Appearence_Change("Speak_Button", Button_Color_Type.Light, false);
                         };
                         break;
                     }
@@ -160,7 +162,7 @@ namespace SoZvon.UI
                         if (dict.Count != 1 || !dict.TryGetValue<bool>("isSpeaking", out var isSpeaking))
                             throw new My_Exception("no valid params");
 
-                        action = () => OnSpeakingVoiceChat(isSpeaking);
+                        action = () => my_Buttons.Fast_Button_Appearence_Change("Speak_Button", Button_Color_Type.Light, isSpeaking);
                         break;
                     }
                 case ActionFromIUser.OnUserMessage:
@@ -168,7 +170,7 @@ namespace SoZvon.UI
                         if (dict.Count != 1 || !dict.TryGetValue<Message>("message", out var message))
                             throw new My_Exception("no valid params");
 
-                        action = () => OnUserMessages(message);
+                        action = () => room_page.OnUserMessages(message);
                         break;
                     }
                 case ActionFromIUser.OnUserTexting:
@@ -186,8 +188,8 @@ namespace SoZvon.UI
 
                         action = () =>
                         {
-                            UserDeleteOnPanel(login);
-                            UserVoiceChatDeleteOnPanel(login);
+                            my_Actions.UserDeleteOnPanel(login);
+                            my_Actions.UserVoiceChatDeleteOnPanel(login);
                         };
                         break;
                     }
@@ -196,7 +198,7 @@ namespace SoZvon.UI
                         if (dict.Count != 1 || !dict.TryGetValue<Room_User>("user", out var user))
                             throw new My_Exception("no valid params");
 
-                        action = () => UserVoiceChatAddToPanel(user);
+                        action = () => my_Actions.UserVoiceChatAddToPanel(user);
                         break;
                     }
                 case ActionFromIUser.OnUserExitVoiceChat:
@@ -204,7 +206,7 @@ namespace SoZvon.UI
                         if (dict.Count != 1 || !dict.TryGetValue<Room_User>("user", out var user))
                             throw new My_Exception("no valid params");
 
-                        action = () => UserVoiceChatDeleteOnPanel(user.Login);
+                        action = () => my_Actions.UserVoiceChatDeleteOnPanel(user.Login);
                         break;
                     }
                 case ActionFromIUser.OnSendingUserMessage:
@@ -217,7 +219,7 @@ namespace SoZvon.UI
 
                         action = () =>
                         {
-                            Show_MY_MessageOnScreen(dateTime, guid, text, reciever, filesInfos);
+                            my_Actions.Show_MY_MessageOnScreen(dateTime, guid, text, reciever, filesInfos);
                             
                             if(dateTime == DateTime.MinValue)
                                 room_page.On_Sending_Text(filesInfos);
@@ -233,7 +235,7 @@ namespace SoZvon.UI
                         if (!dict.TryGetValue<string>("text", out var text))
                             throw new My_Exception("no valid params");
 
-                        action = () => Show_SERVER_MessageOnScreen(guid, date, text);
+                        action = () => my_Actions.Show_SERVER_MessageOnScreen(guid, date, text);
                         break;
                     }
                 case ActionFromIUser.Show_USER_MessageOnScreen:
@@ -253,7 +255,7 @@ namespace SoZvon.UI
                             users_colors.Add(sender, login_color);
                         }
                         
-                        action = () => Show_CLIENT_MessageOnScreen(dateTime, guid, login_color, text, sender, filesInfos, IsPublic);
+                        action = () => my_Actions.Show_CLIENT_MessageOnScreen(dateTime, guid, login_color, text, sender, filesInfos, IsPublic);
                         break;
                     }
                 case ActionFromIUser.ShowUserOnScreen:
@@ -261,7 +263,7 @@ namespace SoZvon.UI
                         if (dict.Count != 1 || !dict.TryGetValue<Room_User>("user", out var user))
                             throw new My_Exception("no valid params");
 
-                        action = () => UserAddToPanel(user);
+                        action = () => my_Actions.UserAddToPanel(user);
                         break;
                     }
                 case ActionFromIUser.ShowUsersOnScreen:
@@ -271,7 +273,7 @@ namespace SoZvon.UI
 
                         action = () =>
                         {
-                            UsersAddToPanel(users);
+                            my_Actions.UsersAddToPanel(users);
                             ShowPeopleTagsOnPanel(users, "");
                         };
                         break;
@@ -281,7 +283,7 @@ namespace SoZvon.UI
                         if (dict.Count != 1 || !dict.TryGetValue<List<Room>>("rooms", out var rooms))
                             throw new My_Exception("no valid params");
 
-                        action = () => RoomsAddToPanel(rooms);
+                        action = () => my_Actions.RoomsAddToPanel(rooms);
                         break;
                     }
                 case ActionFromIUser.ShowRoomOnScreen:
@@ -289,7 +291,7 @@ namespace SoZvon.UI
                         if (dict.Count != 1 || !dict.TryGetValue<Room>("room", out var room))
                             throw new My_Exception("no valid params");
                         
-                        action = () => RoomAddToPanel(room);
+                        action = () => my_Actions.RoomAddToPanel(room);
                         break;
                     }
                 case ActionFromIUser.UpdateRoomOnScreen:
@@ -297,7 +299,7 @@ namespace SoZvon.UI
                         if (dict.Count != 1 || !dict.TryGetValue<Room>("room", out var room))
                             throw new My_Exception("no valid params");
 
-                        action = () => RoomChangeOnPanel(room);
+                        action = () => my_Actions.RoomChangeOnPanel(room);
                         break;
                     }
                 case ActionFromIUser.DeleteRoomOnScreen:
@@ -305,7 +307,7 @@ namespace SoZvon.UI
                         if (dict.Count != 1 || !dict.TryGetValue<string>("roomName", out var roomName))
                             throw new My_Exception("no valid params");
 
-                        action = () => RoomDeleteOnPanel(roomName);
+                        action = () => my_Actions.RoomDeleteOnPanel(roomName);
                         break;
                     }
                 case ActionFromIUser.ShowUsersTags:
@@ -315,7 +317,7 @@ namespace SoZvon.UI
 
                         action = () =>
                         {
-                            ChangeVisibility_Grid_PeopleTags(Visibility.Visible);
+                            room_page.ChangeVisibility_Grid_PeopleTags(Visibility.Visible);
                             ShowPeopleTagsOnPanel(users, text);
                         };
                         break;
@@ -325,7 +327,7 @@ namespace SoZvon.UI
                         if (dict.Count != 0)
                             throw new My_Exception("no valid params");
 
-                        action = () => ChangeVisibility_Grid_PeopleTags(Visibility.Collapsed);
+                        action = () => room_page.ChangeVisibility_Grid_PeopleTags(Visibility.Collapsed);
                         break;
                     }
                 case ActionFromIUser.UpdateUsersTags:
@@ -561,21 +563,21 @@ namespace SoZvon.UI
             WindowStyle = WindowStyle.SingleBorderWindow;
             WindowStartupLocation = WindowStartupLocation.CenterScreen;
 
+            MinWidth = Min_RightPanel_Size + offset_margin_MainGrid_Room + Min_LeftPanel_Size;
+            MinHeight = 660;
+
             _ = Main_Thread(cts.Token);
             _ = Pressing_Button_Thread(cts.Token);
             _ = IUser_Channel_Thread(cts.Token);
-
-            InitializeComponent();
-
-            InitializeSubClasses();
         }
 
         public void OnStart()
         {
-            MakeAction_Form(() => {
-                Visibility = Visibility.Visible;
-                GetDataReesterWindows();
-            });
+            InitializeComponent();
+
+            InitializeSubClasses();
+            Visibility = Visibility.Visible;
+            GetDataReesterWindows();
         }
 
         void InitializeSubClasses()
@@ -611,19 +613,10 @@ namespace SoZvon.UI
         void StartProperties()
         {
             my_Actions.Navigate_MainFrame_To(Page_Type.LogInPage);
-            my_Actions.Navigate_LeftPanel_To(Page_Type.RoomPanelPage);
-            my_Actions.Navigate_RightPanel_To(Page_Type.RoomPage);
-
-            Textbox_PrivateMsg_IsEnabled(false);
-            Textbox_IsEnabled(false);
-
-            ChangeVisibility_Grid_PeopleTags(Visibility.Collapsed);
-
-            MinWidth = Min_RightPanel_Size + offset_margin_MainGrid_Room + Min_LeftPanel_Size;
-            MinHeight = 660;
+            my_Actions.Navigate_Panels_To(Panel_Type.RoomPanels);
 
             SizeChanged += MainWindow_SizeChanged;
-            MouseLeftButtonUp += (sender, e) => { my_Buttons.Set_Active_Button(""); };
+            MouseLeftButtonUp += (_, _) => my_Buttons.Set_Active_Button("");
             buttonTimer.SetAcionOnTick(() => my_Buttons.CanPressButton = true);
         }
         void GetDataReesterWindows()
@@ -647,6 +640,8 @@ namespace SoZvon.UI
             login_page.Remember_Me_Sign.IsChecked = login_password_valid || ip_valid;
         }
 
+
+        // ГЛАВНЫЙ ПОТОК ПРИЛОЖЕНИЯ, КОТОРЫЙ ВСЕ ОБРАБАТЫВАЕТ ПО ОЧЕРЕДИ
         async Task Main_Thread(CancellationToken cancellationToken)
         {
             try
@@ -667,12 +662,14 @@ namespace SoZvon.UI
             catch (OperationCanceledException) { return; }
         }
         public async void MakeAction_Form(Action action) => await form_current_actions_channel.Writer.WriteAsync(action);
-        public async Task<T> MakeAction_Form_Dispatcher<T>(Func<T> action) => await Dispatcher.InvokeAsync(action);        
+        public async Task<T> MakeAction_Form_Dispatcher<T>(Func<T> action) => await Dispatcher.InvokeAsync(action);
 
+
+        // Действия при определенных событий в приложении
         public void OnLogin()
         {
-            my_Buttons.Set_Active_Button("");
             my_Actions.Navigate_MainFrame_To(Page_Type.None);
+            my_Buttons.Set_Active_Button("");
         }
         public void OnRegister(string login, string password)
         {
@@ -686,34 +683,22 @@ namespace SoZvon.UI
         public void OnEnterRoom(string room_name)
         {
             room_page.OnEnterRoom(room_name);
-
             my_Buttons.Fast_Button_Appearence_Change("Room_Button", Button_Color_Type.Light, true);
         }
         public void OnExitRoom()
         {
             room_page.OnExitRoom();
-            my_Actions.OnRoomExit();
+            my_Actions.OnExitRoom();
 
             my_Buttons.Fast_Button_Appearence_Change("Room_Button", Button_Color_Type.Light, false);
-
-            OnEnterExitVoiceChat(false);
-            OnSpeakingVoiceChat(false);
+            my_Buttons.Fast_Button_Appearence_Change("Join_VoiceChat_Button", Button_Color_Type.Light, false);
+            my_Buttons.Fast_Button_Appearence_Change("Speak_Button", Button_Color_Type.Light, false);
 
             filesManager.ClearFilesList();
         }
-        public void OnUserMessages(Message message) => room_page.OnUserMessages(message);
 
-        public void OnEnterExitVoiceChat(bool IsEntering) => my_Buttons.Fast_Button_Appearence_Change("Join_VoiceChat_Button", Button_Color_Type.Light, IsEntering);
-        public void OnSpeakingVoiceChat(bool IsSpeaking) => my_Buttons.Fast_Button_Appearence_Change("Speak_Button", Button_Color_Type.Light, IsSpeaking);
-        public void OnTextBoxMessages(string reciever, string text, My_FileInfo[] filesInfos) => User.OnInterfacesAction(ActionToIUser.OnSendingMessageTextBox, new() {
-            ["reciever"] = reciever,
-            ["text"] = text,
-            ["filesInfos"] = filesInfos
-        });
-        public void MakeNotificationServer(TypeNotification typeNotification, Dictionary<string, object> dict) => User.OnInterfacesAction(ActionToIUser.ServerNotifyOccured, new() {
-            ["notification"] = new NotificationServer(typeNotification, dict) 
-        });
 
+        // Действия с файлами (загрузка, отправка и т.п.)
         public void DownloadFile(string filename, string saveFolder) => User.OnInterfacesAction(ActionToIUser.DownloadFile, new() {
             ["filename"] = filename,
             ["saveFolder"] = saveFolder
@@ -727,50 +712,27 @@ namespace SoZvon.UI
         public void CanselOperation(string operationID) => User.OnInterfacesAction(ActionToIUser.CancelOperation, new() {
             ["operationID"] = operationID 
         });
-
         public Grid CreateFilesContainer(List<My_FileInfo> fileInfos) => filesManager.CreateContainer(fileInfos);
 
+
+        // НАДО УБРАТЬ КОЛХОЗ с постоянным отображением всех пользователей на гриде тэгов
         public void ShowPeopleTagsOnPanel(List<Room_User> room_Users, string text) => my_Actions.ShowPeopleTagsOnPanel(room_Users, text);
-        public void UsersAddToPanel(List<Room_User> room_Users) => my_Actions.UsersAddToPanel(room_Users);
-        public void UserAddToPanel(Room_User room_user) => my_Actions.UserAddToPanel(room_user);
-        public void UserDeleteOnPanel(string id) => my_Actions.UserDeleteOnPanel(id);
-        public void UserVoiceChatAddToPanel(Room_User room_user) => my_Actions.UserVoiceChatAddToPanel(room_user);
-        public void UserVoiceChatDeleteOnPanel(string id) => my_Actions.UserVoiceChatDeleteOnPanel(id);
 
-        public void RoomsAddToPanel(List<Room> rooms) => my_Actions.RoomsAddToPanel(rooms);
-        public void RoomAddToPanel(Room room) => my_Actions.RoomAddToPanel(room);
-        public void RoomChangeOnPanel(Room room) => my_Actions.RoomChangeOnPanel(room);
-        public void RoomDeleteOnPanel(string id) => my_Actions.RoomDeleteOnPanel(id);
 
-        public void Show_CLIENT_MessageOnScreen(DateTime dateTime, Guid guid, Color login_color, string text, string sender, My_FileInfo[] filesInfos, MessageFromUser IsPublic = MessageFromUser.Public) => my_Actions.Show_CLIENT_MessageOnScreen(dateTime, guid, login_color, text, sender, filesInfos, IsPublic);
-        public void Show_SERVER_MessageOnScreen(Guid guid, DateTime date, string text) => my_Actions.Show_SERVER_MessageOnScreen(guid, date, text);
-        public void Show_MY_MessageOnScreen(DateTime date, Guid guid, string text, string reciever, My_FileInfo[] image_path) => my_Actions.Show_MY_MessageOnScreen(date, guid, text, reciever, image_path);
+        // Действия для отображения инфы на экране
+        public void Change_Log_Text(string text, Color color)
+        {
+            if (Log_Grid.FindElementByTag<TextBlock>("Text") is not TextBlock textBlock)
+                return;
 
+            textBlock.Text = text;
+            textBlock.Foreground = new SolidColorBrush(color);
+        }
         public void Make_ErrorMessage(string title, string text, int time = 2000) => notifyMsgManager.New_NotifyMessage(title, text, Color.FromRgb(255, 0, 0), time);
         public void Make_NotifyMessage(string title, string text, int time = 2000) => notifyMsgManager.New_NotifyMessage(title, text, Color.FromRgb(0, 200, 0), time);
-        public void IsFocusable_TagTextblock(object sender, bool GotFocus, bool IsEntered_TagsPeople_TextBox_Grid, bool TabPressed)
-        {
-            if (!GotFocus)
-            {
-                bool canProcessHiding = (sender is TextBox or Grid) && (!IsEntered_TagsPeople_TextBox_Grid || TabPressed);
 
-                if (!canProcessHiding) 
-                    return;
-            }
-            else if (!(GotFocus && sender is TextBox && room_page.Grid_Users_Tags.Visibility == Visibility.Collapsed))
-            {
-                return;
-            }
 
-            string text = room_page.Textbox_PrivateMsg.Text;
-
-            User.OnInterfacesAction(ActionToIUser.OnFocusTagTextblock, new() {
-                ["GotFocus"] = GotFocus,
-                ["text"] = text
-            });
-        }
-        public void ChangeVisibility_Grid_PeopleTags(Visibility visibility) => my_Actions.ChangeVisibility_Grid_PeopleTags(visibility);
-
+        // Действия для SettingsUI
         public void UpdateSetting<T>(string id, T value) => User.OnInterfacesAction(ActionToIUser.UpdateSetting, new() {
             ["id"] = id,
             ["value"] = value!
@@ -782,68 +744,173 @@ namespace SoZvon.UI
         public void TryResetToLastSettings() => User.OnInterfacesAction(ActionToIUser.TryResetToLastSettings, []);
         public void TryResetToDefaultSettings() => User.OnInterfacesAction(ActionToIUser.TryResetToDefaultSettings, []);
 
+
+        // Действия при нажатии Hotkey
         public void SelectMicrophoneByName(string name) => User.OnInterfacesAction(ActionToIUser.SelectMicrophoneByName, new() {
             ["microphone"] = name
         });
         public void ReloadConnectionServ() => User.OnInterfacesAction(ActionToIUser.ReloadConnectionServer, []);
-        public void CloseApplication() => Application.Current.Shutdown();
-
-        public void Change_Log_Text(string text, Color color)
+        public void CloseApplication()
         {
-            if (Log_Grid.FindElementByTag<TextBlock>("Text") is not TextBlock textBlock) 
-                return;
-
-            textBlock.Text = text;
-            textBlock.Foreground = new SolidColorBrush(color);
+            Application.Current.Shutdown();
+            User.OnInterfacesAction(ActionToIUser.ApplicationExit, []);
+            cts.Cancel();
         }
-        public void Textbox_PrivateMsg_IsEnabled(bool state) => room_page.Textbox_PrivateMsg_IsEnabled(state);
-        public void Textbox_IsEnabled(bool state) => room_page.Textbox_IsEnabled(state);
-        public void Chatting_Textbox_SetText(string text) => room_page.Chatting_RichTextBox_SetText(text);
 
+
+        // Уведомление Главный Потока о каких-либо действиях
+        public void OnTextBoxMessages(string reciever, string text, My_FileInfo[] filesInfos) => User.OnInterfacesAction(ActionToIUser.OnSendingMessageTextBox, new() {
+            ["reciever"] = reciever,
+            ["text"] = text,
+            ["filesInfos"] = filesInfos
+        });
+        public void MakeNotificationServer(TypeNotification typeNotification, Dictionary<string, object> dict) => User.OnInterfacesAction(ActionToIUser.ServerNotifyOccured, new() {
+            ["notification"] = new NotificationServer(typeNotification, dict)
+        });
+        public void IsFocusable_TagTextblock(bool GotFocus, string text) => User.OnInterfacesAction(ActionToIUser.OnFocusTagTextblock, new() {
+            ["GotFocus"] = GotFocus,
+            ["text"] = text
+        });
         public void TextBoxTextChange(string text) => User.OnInterfacesAction(ActionToIUser.TagsTextChange, new() {
             ["text"] = text}
         );
         public void ChangeIP(string ip) => User.OnInterfacesAction(ActionToIUser.UpdateIP, new() {
             ["ip"] = ip 
         });
-        
     }
     public partial class MainWindow : Window
     {
+        const int animationDuration = 150;
         const double offset_margin_MainGrid_Room = 47;
         const int Min_RightPanel_Size = 805;
         const int Min_LeftPanel_Size = 190;
+
+        DoubleAnimation currentWidthAnimation;
+        ThicknessAnimation currentMarginAnimation;
+
+        readonly object lock_animationResizeWindow = new();
+
         double LeftPanel_percentage = 0.2;
+        double pendingTargetWidth = -1;
+        bool isAnimating = false;
 
         void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
         {
-            double totalAvailableWidth = e.NewSize.Width - offset_margin_MainGrid_Room;
-            double newWidth_RoomPanel = Math.Max(LeftPanel_percentage * totalAvailableWidth, Min_LeftPanel_Size);
+            var new_width = CalculateTargetWidth(e.NewSize.Width);
 
-            if (totalAvailableWidth - newWidth_RoomPanel < Min_RightPanel_Size)
+            // Вычисляем целевой размер и сохраняем его
+            lock (lock_animationResizeWindow)
             {
-                newWidth_RoomPanel = Math.Max(totalAvailableWidth - Min_RightPanel_Size, Min_LeftPanel_Size);
+                if (new_width >= 0)
+                {
+                    if (!isAnimating)
+                    {
+                        pendingTargetWidth = -1;
+                        MakeAction_Form(() => StartAnimation(new_width));
+                    }
+                    else
+                    {
+                        pendingTargetWidth = new_width;
+                    }
+                }
+            }
+        }
+        void StartAnimation(double targetWidth)
+        {
+            lock (lock_animationResizeWindow)
+            {
+                if (Math.Abs(LeftPanel.ActualWidth - targetWidth) < 1.0)
+                {
+                    isAnimating = false;
+                    return;
+                }
+                else isAnimating = true;
             }
 
-            MainGrid_RightPanel.Margin = new Thickness(newWidth_RoomPanel + offset_margin_MainGrid_Room, MainGrid_RightPanel.Margin.Top, MainGrid_RightPanel.Margin.Right, MainGrid_RightPanel.Margin.Bottom);
-            LeftPanel.Width = newWidth_RoomPanel;
-
-            room_page.ProcessTextChanged();
+            MakeSmoothResizeAnimation(targetWidth);
         }
+        void MakeSmoothResizeAnimation(double targetWidth)
+        {
+            double currentWidth = LeftPanel.ActualWidth;
+            double currentMarginLeft = MainGrid_RightPanel.Margin.Left;
+
+            LeftPanel.BeginAnimation(WidthProperty, null);
+            MainGrid_RightPanel.BeginAnimation(MarginProperty, null);
+
+            LeftPanel.Width = currentWidth;
+            MainGrid_RightPanel.Margin = new Thickness(currentMarginLeft, MainGrid_RightPanel.Margin.Top, MainGrid_RightPanel.Margin.Right, MainGrid_RightPanel.Margin.Bottom);
+
+            currentWidthAnimation = new() {
+                To = targetWidth,
+                Duration = TimeSpan.FromMilliseconds(animationDuration),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            currentMarginAnimation = new() {
+                To = new Thickness(targetWidth + offset_margin_MainGrid_Room, MainGrid_RightPanel.Margin.Top, MainGrid_RightPanel.Margin.Right, MainGrid_RightPanel.Margin.Bottom),
+                Duration = TimeSpan.FromMilliseconds(animationDuration),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            currentWidthAnimation.Completed -= OnSmoothResizeAnimationCompleted; // Отписываемся от предыдущего
+            currentWidthAnimation.Completed += OnSmoothResizeAnimationCompleted;
+
+            LeftPanel.BeginAnimation(WidthProperty, currentWidthAnimation);
+            MainGrid_RightPanel.BeginAnimation(MarginProperty, currentMarginAnimation);
+        }
+        double CalculateTargetWidth(double totalWidth)
+        {
+            double totalAvailableWidth = totalWidth - offset_margin_MainGrid_Room;
+            double targetWidth = Math.Max(LeftPanel_percentage * totalAvailableWidth, Min_LeftPanel_Size);
+
+            if (totalAvailableWidth - targetWidth < Min_RightPanel_Size)
+            {
+                targetWidth = Math.Max(totalAvailableWidth - Min_RightPanel_Size, Min_LeftPanel_Size);
+            }
+
+            return targetWidth;
+        }
+        void OnSmoothResizeAnimationCompleted(object? sender, EventArgs e)
+        {
+            lock (lock_animationResizeWindow)
+            {
+                isAnimating = false;
+
+                if (pendingTargetWidth >= 0)
+                {
+                    var nextWidth = pendingTargetWidth;
+                    pendingTargetWidth = -1;
+                    MakeAction_Form(() => StartAnimation(nextWidth));
+                }
+            }
+        }
+
         void OnDrag_RightLeftPanelThumb(object sender, System.Windows.Controls.Primitives.DragDeltaEventArgs e)
         {
+            lock (lock_animationResizeWindow)
+            {
+                isAnimating = false;
+                pendingTargetWidth = -1;
+            }
+
+            // Останавливаем текущие анимации
+            LeftPanel.BeginAnimation(WidthProperty, null);
+            MainGrid_RightPanel.BeginAnimation(MarginProperty, null);
+
+            double currentTotalWidth = LeftPanel.ActualWidth + MainGrid_RightPanel.ActualWidth;
             double newWidth_RoomPanel = LeftPanel.ActualWidth + e.HorizontalChange;
-            double newWidth_RightPanel = MainGrid_RightPanel.ActualWidth - e.HorizontalChange;
 
-            if (newWidth_RoomPanel < Min_LeftPanel_Size || newWidth_RightPanel < Min_RightPanel_Size) 
-                return;
-            else if (newWidth_RoomPanel > (LeftPanel.ActualWidth + MainGrid_RightPanel.ActualWidth) - Min_RightPanel_Size)
-                newWidth_RoomPanel = (LeftPanel.ActualWidth + MainGrid_RightPanel.ActualWidth) - Min_RightPanel_Size;
+            // Проверяем минимальные размеры
+            if (newWidth_RoomPanel < Min_LeftPanel_Size)
+                newWidth_RoomPanel = Min_LeftPanel_Size;
 
-            LeftPanel_percentage = Math.Round(newWidth_RoomPanel / (newWidth_RoomPanel + newWidth_RightPanel), 4);
+            if (currentTotalWidth - newWidth_RoomPanel < Min_RightPanel_Size)
+                newWidth_RoomPanel = currentTotalWidth - Min_RightPanel_Size;
 
-            MainGrid_RightPanel.Margin = new Thickness(newWidth_RoomPanel + offset_margin_MainGrid_Room, MainGrid_RightPanel.Margin.Top, MainGrid_RightPanel.Margin.Right, MainGrid_RightPanel.Margin.Bottom);
+            // Обновляем процентное соотношение
+            LeftPanel_percentage = Math.Round(newWidth_RoomPanel / currentTotalWidth, 4);
+
+            // Применяем изменения напрямую (без анимации во время перетаскивания)
             LeftPanel.Width = newWidth_RoomPanel;
+            MainGrid_RightPanel.Margin = new Thickness(newWidth_RoomPanel + offset_margin_MainGrid_Room, MainGrid_RightPanel.Margin.Top, MainGrid_RightPanel.Margin.Right, MainGrid_RightPanel.Margin.Bottom);
         }
 
         public bool IsWindowFocused() => IsActive && IsLoaded && Visibility is Visibility.Visible;
@@ -857,6 +924,8 @@ namespace SoZvon.UI
     // ФУНКЦИИ СВЯЗАННЫЕ С КНОПКАМИ
     public partial class MainWindow : Window
     {
+        bool navidateToSettings = false;
+
         readonly Channel<Action> pressing_button_channel = Channel.CreateBounded<Action>(new BoundedChannelOptions(500) { FullMode = BoundedChannelFullMode.Wait });
 
         async Task Pressing_Button_Thread(CancellationToken cancellationToken)
@@ -1166,10 +1235,13 @@ namespace SoZvon.UI
         public void On_Exit_Button_RegPage() => my_Actions.Navigate_MainFrame_To(Page_Type.LogInPage);
         public void On_SettingsOpen_Button()
         {
-            //Make_NotifyMessage("Ебои", "Пока не работает, не кликай", 5000);
-            //return;
-            my_Actions.Navigate_LeftPanel_To(Page_Type.TitleSettingsPage);
-            my_Actions.Navigate_RightPanel_To(Page_Type.SettingsPage);
+            navidateToSettings = !navidateToSettings;
+
+            if (navidateToSettings)
+            {
+                my_Actions.Navigate_Panels_To(Panel_Type.SettingsPanels);
+            }
+            else my_Actions.Navigate_Panels_To(Panel_Type.RoomPanels);
         }
         public void On_Room_Name_Button(string active_room_button, string room_name_button_pressed)
         {
@@ -1184,20 +1256,13 @@ namespace SoZvon.UI
         public void On_Grid_Tags_People_Button(string grid_tags_people_name_pressed) => room_page.On_Grid_Tags_People_Button(grid_tags_people_name_pressed);
         public void On_MainSettings_Button(string room_name_button_pressed)
         {
-            Button_Color_Type color_Type;
+            //if (active_room_button == room_name_button_pressed)
+            //    return;
+            //else if (active_room_button != "")
+            //    my_Buttons.Fast_Button_Appearence_Change("Room_Name_Button", Button_Color_Type.Light, active_room_button);
 
-
-            foreach (Grid setting_grid in titleSettings_page.All_Settings.Children)
-            {
-                color_Type = Button_Color_Type.Light;
-
-                if (setting_grid.Name == room_name_button_pressed)
-                    color_Type = Button_Color_Type.Strong;
-
-                my_Buttons.Fast_Button_Appearence_Change("Room_Name_Button", color_Type, room_name_button_pressed);
-            }
-
-            my_Buttons.Set_Active_Button_Room(room_name_button_pressed);
+            //my_Buttons.Fast_Button_Appearence_Change("Room_Name_Button", Button_Color_Type.Strong, room_name_button_pressed);
+            //my_Buttons.Set_Active_Button_Room(room_name_button_pressed);
         }
 
         public Grid? FindButtonGrid(string name_button, string tag_button = "")

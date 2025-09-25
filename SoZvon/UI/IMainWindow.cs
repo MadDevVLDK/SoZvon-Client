@@ -40,7 +40,7 @@ namespace SoZvon.UI
         void TextBoxTextChange(string text);
         void Make_NotifyMessage(string title, string text, int time = 2000);
         void Make_ErrorMessage(string title, string text, int time = 2000);
-        void IsFocusable_TagTextblock(object sender, bool GotFocus, bool IsEntered_TagsPeople_TextBox_Grid, bool TabPressed);
+        void IsFocusable_TagTextblock(bool GotFocus, string text);
 
         void ReloadConnectionServ();
         void CloseApplication();

@@ -166,7 +166,7 @@
                 <TextBlock Name="RoomName_OnTop" TextWrapping="Wrap" TextAlignment="Center" Language="ru-ru" FontSize="24" FontFamily="Comic Sans MS"  Height="40" VerticalAlignment="Center" Text="Комната: ..." HorizontalAlignment="Center" Width="582" Grid.Column="1"/>
             </Grid>
 
-            <Grid Name="Messages_Window_Grid" Grid.Row="1" AllowDrop="True" DragEnter="FilesToSend_DragEnter" DragLeave="FilesToSend_DragLeave" Drop="FilesToSend_Drop">
+            <Grid Name="Messages_Window_Grid" MinWidth="500" Grid.Row="1" AllowDrop="True" DragEnter="FilesToSend_DragEnter" DragLeave="FilesToSend_DragLeave" Drop="FilesToSend_Drop">
 
                 <Rectangle Fill="#ffdb9e" Margin="0,-1,10,-1" StrokeThickness="1" Stroke="#a28d6a"/>
 
