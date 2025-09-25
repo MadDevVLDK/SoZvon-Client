@@ -780,13 +780,10 @@ namespace SoZvon.UI
     }
     public partial class MainWindow : Window
     {
-        const int animationDuration = 150;
         const double offset_margin_MainGrid_Room = 47;
         const int Min_RightPanel_Size = 805;
         const int Min_LeftPanel_Size = 190;
-
-        DoubleAnimation currentWidthAnimation;
-        ThicknessAnimation currentMarginAnimation;
+        const int animationDuration = 150;
 
         readonly object lock_animationResizeWindow = new();
 
@@ -840,12 +837,12 @@ namespace SoZvon.UI
             LeftPanel.Width = currentWidth;
             MainGrid_RightPanel.Margin = new Thickness(currentMarginLeft, MainGrid_RightPanel.Margin.Top, MainGrid_RightPanel.Margin.Right, MainGrid_RightPanel.Margin.Bottom);
 
-            currentWidthAnimation = new() {
+            DoubleAnimation currentWidthAnimation = new() {
                 To = targetWidth,
                 Duration = TimeSpan.FromMilliseconds(animationDuration),
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
             };
-            currentMarginAnimation = new() {
+            ThicknessAnimation currentMarginAnimation = new() {
                 To = new Thickness(targetWidth + offset_margin_MainGrid_Room, MainGrid_RightPanel.Margin.Top, MainGrid_RightPanel.Margin.Right, MainGrid_RightPanel.Margin.Bottom),
                 Duration = TimeSpan.FromMilliseconds(animationDuration),
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
@@ -896,17 +893,24 @@ namespace SoZvon.UI
             MainGrid_RightPanel.BeginAnimation(MarginProperty, null);
 
             double currentTotalWidth = LeftPanel.ActualWidth + MainGrid_RightPanel.ActualWidth;
+
             double newWidth_RoomPanel = LeftPanel.ActualWidth + e.HorizontalChange;
+            double newWidth_RightPanel = MainGrid_RightPanel.ActualWidth - e.HorizontalChange;
+
+            var temp_future_width = currentTotalWidth - Min_RightPanel_Size;
 
             // Проверяем минимальные размеры
-            if (newWidth_RoomPanel < Min_LeftPanel_Size)
+            if (newWidth_RightPanel < Min_RightPanel_Size || temp_future_width < newWidth_RoomPanel)
+            {
+                newWidth_RoomPanel = temp_future_width > Min_LeftPanel_Size ? temp_future_width : Min_LeftPanel_Size;
+            }
+            else if (newWidth_RoomPanel < Min_LeftPanel_Size)
+            {
                 newWidth_RoomPanel = Min_LeftPanel_Size;
-
-            if (currentTotalWidth - newWidth_RoomPanel < Min_RightPanel_Size)
-                newWidth_RoomPanel = currentTotalWidth - Min_RightPanel_Size;
+            }  
 
             // Обновляем процентное соотношение
-            LeftPanel_percentage = Math.Round(newWidth_RoomPanel / currentTotalWidth, 4);
+            LeftPanel_percentage = Math.Round(newWidth_RoomPanel / (newWidth_RoomPanel + newWidth_RightPanel), 4);
 
             // Применяем изменения напрямую (без анимации во время перетаскивания)
             LeftPanel.Width = newWidth_RoomPanel;

@@ -926,11 +926,6 @@ namespace SoZvon.UI
             mainWindow.rightPanel_ref.Navigate(page);
         }
 
-
-        public void OnStart()
-        {
-            
-        }
         public void OnExitRoom()
         {
             UsersDeleteOnPanel();

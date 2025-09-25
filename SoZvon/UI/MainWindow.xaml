@@ -175,14 +175,14 @@
 
         </Grid>
 
-        <Frame Name="LeftPanel" Background="#ffdb9e" Margin="47,0,0,29" HorizontalAlignment="Left" Width="294" IsTabStop="False"/>
+        <Frame Name="LeftPanel" Background="#ffdb9e" Margin="47,0,0,29" HorizontalAlignment="Left" Width="294" IsTabStop="False" NavigationUIVisibility="Hidden"/>
 
         <Grid Name="MainGrid_RightPanel" Margin="340,0,22,29" Visibility="Visible">
 
             <Rectangle Fill="#ffc666" StrokeThickness="1" Stroke="#a28d6a" HorizontalAlignment="Left" Width="11"/>
             <Thumb Opacity="0" Background="Transparent" Cursor="SizeWE" BorderThickness="1" BorderBrush="#a28d6a" DragDelta="OnDrag_RightLeftPanelThumb" HorizontalAlignment="Left" Width="11"/>
 
-            <Frame Name="RightPanel" Background="#ffdb9e" Margin="10,0,-1,0" IsTabStop="False"/>
+            <Frame Name="RightPanel" Background="#ffdb9e" Margin="10,0,-1,0" IsTabStop="False" NavigationUIVisibility="Hidden"/>
 
         </Grid>
 
