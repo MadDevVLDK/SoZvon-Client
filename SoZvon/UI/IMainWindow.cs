@@ -22,7 +22,7 @@ namespace SoZvon.UI
         SettingsPage settings_page { get; }
         TitleSettingsPage titleSettings_page { get; }
 
-        void MakeAction_Form(Action action);
+        Task MakeAction_Form(Action action);
         Task<T> MakeAction_Form_Dispatcher<T>(Func<T> action);
 
         void AnyButton_UpMouse(object sender, MouseButtonEventArgs e);

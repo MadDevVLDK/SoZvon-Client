@@ -22,4 +22,12 @@
             Details = message;
         }
     }
+
+    public class UserException(string? title, string message) : Exception(message)
+    {
+        public string? Title { get; } = title;
+        public string Text { get; } = message;
+
+        public UserException(string message) : this(null, message) { }
+    }
 }

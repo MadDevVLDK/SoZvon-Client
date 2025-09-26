@@ -25,14 +25,13 @@ namespace SoZvon.SettingsLogicManager
                     {
                         InterpretateActionIUser(action_IUser).Invoke();
                     }
-                    catch (OperationCanceledException) { }
                     catch (My_Exception ex)
                     {
                         Message_Error(ex.Title ?? action_IUser.Action.ToString(), ex.Message);
                     }
                 }
             }
-            catch (OperationCanceledException) { return; }
+            catch (OperationCanceledException) { }
         }
         Action InterpretateActionIUser(Action_IUser action_IUser)
         {

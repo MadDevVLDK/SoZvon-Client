@@ -1,16 +1,17 @@
-﻿namespace SoZvon.SubClasses
+﻿using System.Collections.Concurrent;
+
+namespace SoZvon.SubClasses
 {
     public record NotificationServer(TypeNotification Type, Dictionary<string, object> Dict);
 
     public class Message
     {
-        static readonly List<Message> history_all_messages = [];
-        static readonly object history_lock = new();
+        static readonly ConcurrentDictionary<Guid, Message> history_all_messages = [];
 
-        public Guid Id;
-        public byte[] message_data;
-        public MessageInfo message_info;
-        public DateTime dateTime;
+        public Guid Id { get; set; }
+        public byte[] message_data { get; set; }
+        public MessageInfo message_info { get; set; }
+        public DateTime dateTime { get; set; }
 
         public Message(CommandText cmnd_text, byte[] buffer)
         {
@@ -49,7 +50,8 @@
 
             int msg_lenght = body.Length + guid.Length + 1;
 
-            if (msg_lenght > short.MaxValue) throw new Exception("all_lenght > short.MaxValue");
+            if (msg_lenght > short.MaxValue) 
+                throw new ArgumentException("all_lenght > short.MaxValue");
             
             byte[] lengthBytes = BitConverter.GetBytes((short)msg_lenght); //1 ДЛЯ COMMAND_TEXT
 
@@ -65,30 +67,15 @@
 
             return new Message(guid, message_info, ms.ToArray());
         }
-        public void AddMessageToHistory()
-        {
-            lock (history_lock)
-            {
-                history_all_messages.Add(this);
-            }
-        }
-        public static void ClearMessagesHistory()
-        {
-            lock (history_lock)
-            {
-                history_all_messages.Clear();
-            }
-        }
-        public static Message? FindMessage(Predicate<Message> match)
-        {
-            lock (history_lock)
-            {
-                return history_all_messages.Find(match);
-            }
-        }
+        public bool AddMessageToHistory() => history_all_messages.TryAdd(Id, this);
+        public static void ClearMessagesHistory() => history_all_messages.Clear();
+        public static bool FindMessageByGuid(Guid guid, out Message message) => history_all_messages.TryGetValue(guid, out message!) && message is not null;
+                
+        
         public static byte[] GetBytesFromArgsMessage(params object?[]? args)
         {
-            if (args is null || args.Length == 0) return [];
+            if (args is null || args.Length == 0) 
+                return [];
 
             List<byte> body = [];
 
@@ -108,8 +95,8 @@
                     case short num:
                         body.AddRange(BitConverter.GetBytes(num));
                         break;
-                    case DateTime dateTime:
-                        body.AddRange(BitConverter.GetBytes(dateTime.Ticks));
+                    case DateTime date_Time:
+                        body.AddRange(BitConverter.GetBytes(date_Time.Ticks));
                         break;
                     case Guid guid:
                         body.AddRange(guid.ToByteArray());
@@ -120,8 +107,10 @@
                     case string str:
                         var strBytes = System.Text.Encoding.UTF8.GetBytes(str);
 
-                        if (strBytes.Length > short.MaxValue) throw new ArgumentException($"String length exceeds maximum allowed size ({short.MaxValue} bytes)");
-                        else if (strBytes.Length == 0)
+                        if (strBytes.Length > short.MaxValue) 
+                            throw new ArgumentException($"String length exceeds maximum allowed size ({short.MaxValue} bytes)");
+
+                        if (strBytes.Length == 0)
                         {
                             body.AddRange([0x00, 0x00]);
                             break;
@@ -129,6 +118,7 @@
 
                         body.AddRange(BitConverter.GetBytes((short)strBytes.Length));
                         body.AddRange(strBytes);
+
                         break;
                     case object[] array:
                         if(array.Length != 0) 
@@ -139,7 +129,7 @@
                 }
             }
 
-            return body.ToArray();
+            return [.. body];
         }
     }
 }

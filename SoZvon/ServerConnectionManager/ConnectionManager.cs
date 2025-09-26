@@ -30,10 +30,9 @@ namespace SoZvon.ServerConnectionManager
                     {
                         Message_Error(ex.Title ?? action_IUser.Action.ToString(), ex.Message);
                     }
-                    catch { }
                 }
             }
-            catch (OperationCanceledException) { return; }
+            catch (OperationCanceledException) { }
         }
         Action InterpretateActionIUser(Action_IUser action_IUser)
         {
@@ -72,22 +71,10 @@ namespace SoZvon.ServerConnectionManager
                         if (dict.Count != 0)
                             throw new My_Exception("no valid params");
 
-                        action = () =>
+                        action = async () =>
                         {
                             ForceDisconnect();
-                            New_ConnectionAttempt();
-                        };
-                        break;
-                    }
-                case ActionFromIUser.MakeConnectionServerWithAction:
-                    {
-                        if (dict.Count != 0)
-                            throw new My_Exception("no valid params");
-
-                        action = () =>
-                        {
-                            ForceDisconnect();
-                            New_ConnectionAttempt();
+                            await New_ConnectionAttempt();
                         };
                         break;
                     }
@@ -96,7 +83,7 @@ namespace SoZvon.ServerConnectionManager
                         if (dict.Count != 1 || !dict.TryGetValue<Message>("message", out var message))
                             throw new My_Exception("no valid params");
 
-                        action = () => SendMessage(message);
+                        action = async () => await SendMessage(message);
                         break;
                     }
                 case ActionFromIUser.OnChangeIp:
@@ -117,7 +104,7 @@ namespace SoZvon.ServerConnectionManager
     }
     public partial class ConnectionManager : IServerConnection
     {
-        public string IP = "95.154.89.8";
+        string IP = "95.154.89.8";
         const string PORT_CONST = "12000";
         
         public bool IsLogIn { get; private set; } = false;
@@ -169,20 +156,17 @@ namespace SoZvon.ServerConnectionManager
             heartBeat_check.Start();
         }
 
-        public void New_ConnectionAttempt(int timeout_millisecond_ = 2000, Action? action = null) => New_ConnectionAttempt(IP, timeout_millisecond_, action);
-        async void New_ConnectionAttempt(string ip_, int timeout_millisecond_, Action? action)
+        public async Task New_ConnectionAttempt(int timeout_millisecond = 2000, Action? action = null) => await New_ConnectionAttempt(IP, timeout_millisecond, action);
+        async Task New_ConnectionAttempt(string ip_, int timeout_millisecond_, Action? action)
         {
             await connection_attempts_channel.Writer.WriteAsync(new(ip_, PORT_CONST, timeout_millisecond_, action));
         }
 
-        public async void SendMessage(Message message) => await send_current_messages_channel.Writer.WriteAsync(message);
+        public async Task SendMessage(Message message) => await send_current_messages_channel.Writer.WriteAsync(message);
 
         async Task ConnectingServerThread(CancellationToken cancellationToken)
         {
-            NetworkChange.NetworkAvailabilityChanged += (sender, e) => {
-                if (!e.IsAvailable) 
-                    ForceDisconnect("Turn on your internet");
-            };
+            NetworkChange.NetworkAvailabilityChanged += OnNetworkAvailabilityChanged;
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -198,10 +182,7 @@ namespace SoZvon.ServerConnectionManager
                 await Task.WhenAll(receiveTask, sendTask, heartbeat);
             }
 
-            NetworkChange.NetworkAvailabilityChanged -= (sender, e) => {
-                if (!e.IsAvailable)
-                    ForceDisconnect("Turn on your internet");
-            };
+            NetworkChange.NetworkAvailabilityChanged -= OnNetworkAvailabilityChanged;
         }
         async Task ReceiveMessagesAsync(CancellationToken cancellationToken)
         {
@@ -233,7 +214,9 @@ namespace SoZvon.ServerConnectionManager
                     // КОЛИЧЕСТВО БАЙТОВ ДЛЯ ИНФОРМАЦИИ О ДЛИНЕ СООБЩЕНИЯ
 
                     message_info = new MessageInfo(BitConverter.ToInt16(temp_bytes, 0));
-                    if (message_info.MessageLength == 0) continue;
+
+                    if (message_info.MessageLength == 0) 
+                        continue;
 
                     (temp_bytes, all_bytes) = await ReadSomeBytesAsync(num_bytes: message_info.MessageLength, all_bytes, linkedCts); 
                     // КОЛИЧЕСТВО БАЙТОВ ДЛЯ ИНФОРМАЦИИ О ДЛИНЕ СООБЩЕНИЯ
@@ -257,6 +240,8 @@ namespace SoZvon.ServerConnectionManager
                     break;
                 }
             }
+
+            return;
         }
         async Task SendingThread(CancellationToken cancellationToken)
         {
@@ -331,7 +316,7 @@ namespace SoZvon.ServerConnectionManager
                     CancelCurrentConnectionAttempt();
                 }
             }
-            catch (OperationCanceledException) { return; }
+            catch (OperationCanceledException) { }
             finally
             {
                 CancelCurrentConnectionAttempt();
@@ -424,6 +409,11 @@ namespace SoZvon.ServerConnectionManager
             return (temp_bytes, list_to_add_bytes);
         }
 
+        void OnNetworkAvailabilityChanged(object? _, NetworkAvailabilityEventArgs e)
+        {
+            if (!e.IsAvailable)
+                ForceDisconnect("Turn on your internet");
+        }
         void Connection_Succeed(string ip)
         {
             Log_Notify($"Connected To Server (ip: {ip})");
@@ -431,7 +421,8 @@ namespace SoZvon.ServerConnectionManager
         }
         public void ForceDisconnect()
         {
-            if (!IsConnected) return;
+            if (!IsConnected) 
+                return;
 
             Log_Error("Connection Lost");
             IsConnected = false;

@@ -13,8 +13,8 @@ namespace SoZvon.UI.My_SettingsUIManager
         readonly ISettingsPage settingsPage = settingsPage;
         readonly Dictionary<string, ISettingUI> settingUIs = [];
 
-        readonly FrozenSet<Key> skipKeys = new HashSet<Key> { Key.LeftCtrl, Key.RightCtrl, Key.LeftAlt, Key.RightAlt, Key.LeftShift, Key.RightShift, Key.LWin, Key.RWin }.ToFrozenSet();
-        readonly FrozenSet<Key> bannedKeys = new HashSet<Key> { Key.Escape, Key.Apps, Key.System }.ToFrozenSet();
+        readonly HashSet<Key> skipKeys = [Key.LeftCtrl, Key.RightCtrl, Key.LeftAlt, Key.RightAlt, Key.LeftShift, Key.RightShift, Key.LWin, Key.RWin];
+        readonly HashSet<Key> bannedKeys = [Key.Escape, Key.Apps, Key.System];
 
         string currentHotkeyId = string.Empty;
 
@@ -134,13 +134,17 @@ namespace SoZvon.UI.My_SettingsUIManager
                     settingsPage.ReloadConnectionServ();
                     break;
                 case "MicToggle":
-                    throw new Exception("Пока не работает");
+                    // Пока не реализовано
+                    return;
                 case "AppSoundUp":
-                    throw new Exception("Пока не работает");
+                    // Пока не реализовано
+                    return;
                 case "AppSoundDown":
-                    throw new Exception("Пока не работает");
+                    // Пока не реализовано
+                    return;
                 default:
-                    throw new Exception("WTF");
+                    // Некорректный идентификатор горячей клавиши
+                    return;
             }
         }
 

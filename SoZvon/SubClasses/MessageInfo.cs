@@ -4,13 +4,14 @@
     {
         public const byte lenght_message_head = 21;
 
-        public MessageType MessageType = 0;
-        public MessageSender Sender = 0;
-        public CommandText _commandText = CommandText.None;
+        public short MessageLength { get; set; } = 0;
+        public MessageType MessageType { get; private set; } = 0;
+        public MessageSender Sender { get; private set; } = 0;
         public CommandText CommandText
         {
             get { return _commandText; }
-            set {
+            set
+            {
                 _commandText = value;
                 switch ((byte)value)
                 {
@@ -41,7 +42,8 @@
                 }
             }
         }
-        public short MessageLength { get; set; } = 0;
+
+        CommandText _commandText = CommandText.None;
         
         public MessageInfo(short length, CommandText commandText)
         {
@@ -81,7 +83,7 @@
         }
 
         public static byte[] Read_Bytes(ref List<byte> response_array) => Read_Num_Bytes(ref response_array, Read_Int16_Bytes(ref response_array));
-        public static byte Read_Byte_Bytes(ref List<byte> response_array) => Read_Num_Bytes(ref response_array, 1).First();
+        public static byte Read_Byte_Bytes(ref List<byte> response_array) => Read_Num_Bytes(ref response_array, 1)[0];
         public static Guid Read_Guid_Bytes(ref List<byte> response_array) => new(Read_Num_Bytes(ref response_array, 16));
         public static DateTime Read_DateTime_Bytes(ref List<byte> response_array) => DecodeDateTime(Read_Num_Bytes(ref response_array, 8));
         public static string Read_String_Bytes(ref List<byte> response_array) => System.Text.Encoding.UTF8.GetString(Read_Num_Bytes(ref response_array, Read_Int16_Bytes(ref response_array)));

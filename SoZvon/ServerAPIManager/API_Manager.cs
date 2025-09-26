@@ -20,19 +20,19 @@ namespace SoZvon.ServerAPIManager
             {
                 await foreach (Action_IUser action_IUser in UserUI_Channel.Reader.ReadAllAsync(cancellationToken))
                 {
-                    try
-                    {
-                        Action action = InterpretateActionIUser(action_IUser);
-                        action.Invoke();
-                    }
-                    catch (OperationCanceledException) { }
-                    catch (My_Exception ex)
-                    {
-                        ErrorMessageOccured(ex.Title ?? action_IUser.Action.ToString(), ex.Message);
-                    }
+                    Action action = InterpretateActionIUser(action_IUser);
+                    action.Invoke();
                 }
             }
-            catch (OperationCanceledException) { return; }
+            catch (OperationCanceledException) { }
+            catch (ArgumentException ex)
+            {
+                ErrorMessageOccured("Wrong params (API_Manager)", $"Fatal Error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                ErrorMessageOccured("API_Manager", $"Fatal Error: {ex.Message}");
+            }
         }
         Action InterpretateActionIUser(Action_IUser action_IUser)
         {
@@ -45,7 +45,7 @@ namespace SoZvon.ServerAPIManager
                 case ActionFromIUser.OnLogin:
                     {
                         if (dict.Count != 1 || !dict.TryGetValue<Guid>("guid", out var guid))
-                            throw new My_Exception("no valid params");
+                            throw new ArgumentException(action_IUser.Action.ToString());
 
                         action = () => UpdateLoginGuid(guid);
                         break;
@@ -53,7 +53,7 @@ namespace SoZvon.ServerAPIManager
                 case ActionFromIUser.OnChangeIp:
                     {
                         if (dict.Count != 1 || !dict.TryGetValue<string>("ip", out var ip))
-                            throw new My_Exception("no valid params");
+                            throw new ArgumentException(action_IUser.Action.ToString());
 
                         action = () => SetIP(ip);
                         break;
@@ -61,7 +61,7 @@ namespace SoZvon.ServerAPIManager
                 case ActionFromIUser.OnCloseApplication:
                     {
                         if (dict.Count != 0)
-                            throw new My_Exception("no valid params");
+                            throw new ArgumentException(action_IUser.Action.ToString());
 
                         action = Dispose;
                         break;
@@ -69,7 +69,7 @@ namespace SoZvon.ServerAPIManager
                 case ActionFromIUser.CancelOperation:
                     {
                         if (dict.Count != 1 || !dict.TryGetValue<string>("operationID", out var operationID))
-                            throw new My_Exception("no valid params");
+                            throw new ArgumentException(action_IUser.Action.ToString());
 
                         action = () => CancelOperation(operationID);
                         break;
@@ -77,15 +77,13 @@ namespace SoZvon.ServerAPIManager
                 case ActionFromIUser.DownloadFile:
                     {
                         if (dict.Count != 2 || !dict.TryGetValue<string>("filename", out var filename) || !dict.TryGetValue<string>("saveFolder", out var saveFolder))
-                            throw new My_Exception("no valid params");
+                            throw new ArgumentException(action_IUser.Action.ToString());
 
                         action = async () =>
                         {
-                            string id = await EasyFileDownloadAsync(filename, saveFolder);
-
                             User.OnInterfacesAction(ActionToIUser.SetOperationId, new() {
                                 ["fileName"] = filename,
-                                ["id"] = id
+                                ["id"] = await EasyFileDownloadAsync(filename, saveFolder)
                             });
                         };
                         break;
@@ -93,15 +91,13 @@ namespace SoZvon.ServerAPIManager
                 case ActionFromIUser.UploadFile:
                     {
                         if (dict.Count != 1 || !dict.TryGetValue<string>("filename", out var filename))
-                            throw new My_Exception("no valid params");
+                            throw new ArgumentException(action_IUser.Action.ToString());
 
                         action = async () => 
                         {
-                            string id = await EasyFileUploadAsync(filename);
-
                             User.OnInterfacesAction(ActionToIUser.SetOperationId, new() {
                                 ["fileName"] = filename,
-                                ["id"] = id
+                                ["id"] = await EasyFileUploadAsync(filename)
                             });
                         };
                         break;
@@ -109,22 +105,19 @@ namespace SoZvon.ServerAPIManager
                 case ActionFromIUser.GetInfoFile:
                     {
                         if (dict.Count != 1 || !dict.TryGetValue<string>("filename", out var filename))
-                            throw new My_Exception("no valid params");
+                            throw new ArgumentException(action_IUser.Action.ToString());
 
                         action = async () =>
                         {
-                            string id = await EasyFileGetInfoAsync(filename);
-
-                            User.OnInterfacesAction(ActionToIUser.SetOperationId, new()
-                            {
+                            User.OnInterfacesAction(ActionToIUser.SetOperationId, new() {
                                 ["fileName"] = filename,
-                                ["id"] = id
+                                ["id"] = await EasyFileGetInfoAsync(filename)
                             });
                         };
                         break;
                     }
                 default:
-                    throw new My_Exception("no valid ActionFromIUser");
+                    throw new ArgumentException("no valid ActionFromIUser");
             }
 
             return action;
@@ -138,13 +131,13 @@ namespace SoZvon.ServerAPIManager
         string IP = "95.154.89.8";
         const string PORT_CONST = "12001";
         
-        string LoginGuidMessage;
+        string LoginGuidMessage = string.Empty;
 
         readonly ConcurrentDictionary<string, CancellationTokenSource> activeOperations = new();
 
         readonly HttpClient httpClient = new();
-        Channel<Operation> operationChannel = Channel.CreateUnbounded<Operation>();
         readonly SemaphoreSlim semaphore = new(1, 1);
+        Channel<Operation> operationChannel = Channel.CreateBounded<Operation>(new BoundedChannelOptions(2000) { FullMode = BoundedChannelFullMode.Wait });
         CancellationTokenSource globalCts = new();
 
         public API_Manager(IUser user)
@@ -153,66 +146,6 @@ namespace SoZvon.ServerAPIManager
 
             _ = UserUI_Channel_Thread(globalCts.Token);
             _ = ProcessOperationsAsync(globalCts.Token);
-        }
-        
-        public async Task<string> EasyFileDownloadAsync(string filenameDownload, string saveFolder)
-        {
-            try
-            {
-                string url = $"http://{IP}:{PORT_CONST}/chat-download?file={filenameDownload}";
-
-                string savePath = $"{saveFolder}\\{filenameDownload}";
-
-                return await AddDownloadAsync(filenameDownload, url, savePath);
-            }
-            catch (OperationCanceledException)
-            {
-                ErrorMessageOccured("File_Error", "Download was canceled!");
-            }
-            catch (Exception ex)
-            {
-                ErrorMessageOccured("File_Error", $"Download failed: {ex.Message}");
-            }
-
-            return "";
-        }
-        public async Task<string> EasyFileUploadAsync(string filenameUpload)
-        {
-            try
-            {
-                string url = $"http://{IP}:{PORT_CONST}/chat-upload";
-
-                return await AddUploadAsync(filenameUpload, url);
-            }
-            catch (OperationCanceledException)
-            {
-                ErrorMessageOccured("File_Error", "Upload was canceled!");
-            }
-            catch (Exception ex)
-            {
-                ErrorMessageOccured("File_Error", $"Upload failed: {ex.Message}");
-            }
-
-            return "";
-        }
-        public async Task<string> EasyFileGetInfoAsync(string filenameUpload)
-        {
-            try
-            {
-                string url = $"http://{IP}:{PORT_CONST}/chat-fileinfo?file={filenameUpload}";
-
-                return await AddGetInfoAsync(filenameUpload, url);
-            }
-            catch (OperationCanceledException)
-            {
-                ErrorMessageOccured("File_Error", "Upload was canceled!");
-            }
-            catch (Exception ex)
-            {
-                ErrorMessageOccured("File_Error", $"Upload failed: {ex.Message}");
-            }
-
-            return "";
         }
 
         async Task ProcessOperationsAsync(CancellationToken ct)
@@ -223,53 +156,69 @@ namespace SoZvon.ServerAPIManager
 
                 await foreach (Operation operation in operationChannel.Reader.ReadAllAsync(ct))
                 {
-                    try
-                    {
-                        if (operation is DownloadOperation download)
-                            await ProcessDownloadAsync(download);
 
-                        else if (operation is UploadOperation upload)
-                            await ProcessUploadAsync(upload);
+                    (bool success, string error) = operation switch
+                    {
+                        DownloadOperation download => await DownloadFileAsync(download),
+                        UploadOperation upload => await UploadFileAsync(upload),
+                        GetFileInfoOperation getInfoFile => await GetFileInfoAsync(getInfoFile),
+                        _ => throw new ArgumentException("Unknown operation")
+                    };
 
-                        else if (operation is GetFileInfoOperation getInfoFile)
-                            await ProcessGetInfoAsync(getInfoFile);
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        User.OnInterfacesAction(ActionToIUser.OnErrorHandler, new() {
-                            ["fileName"] = operation.Filename,
-                            ["text"] = "Скачивание отменено"
-                        });
-                    }
-                    catch (My_Exception ex)
-                    {
-                        User.OnInterfacesAction(ActionToIUser.OnErrorHandler, new() {
-                            ["fileName"] = operation.Filename,
-                            ["text"] = ex.Message
-                        });
-                    }
-                    catch (Exception ex)
-                    {
-                        User.OnInterfacesAction(ActionToIUser.OnErrorHandler, new() {
-                            ["fileName"] = operation.Filename,
-                            ["text"] = ex.Message
-                        });
-                    }
-                    finally
-                    {
-                        activeOperations.TryRemove(operation.OperationId, out _);
-                    }
+                    if (!success)
+                        HandleOperationError(operation, error);
+
+                    activeOperations.TryRemove(operation.OperationId, out _);
                 }
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)
             {
-                ErrorMessageOccured("Operation_Error", $"Error processing operation: {ex.Message}");
+                ErrorMessageOccured("ProcessOperation (API_Manager)", $"Fatal Error: {ex.Message}");
             }
             finally
             {
                 semaphore.Release();
             }
+        }
+        void HandleOperationError(Operation operation, string error)
+        {
+            switch (operation)
+            {
+                case UploadOperation:
+                    User.OnInterfacesAction(ActionToIUser.OnUploadErrorHandler, new() {
+                        ["fileName"] = operation.Filename,
+                        ["text"] = error
+                    });
+                    break;
+                default:
+                    User.OnInterfacesAction(ActionToIUser.OnErrorHandler, new() {
+                        ["fileName"] = operation.Filename,
+                        ["text"] = error
+                    });
+                    break;
+            }
+        }
+
+        public async Task<string> EasyFileDownloadAsync(string filenameDownload, string saveFolder)
+        {
+            string url = $"http://{IP}:{PORT_CONST}/chat-download?file={filenameDownload}";
+
+            string savePath = $"{saveFolder}\\{filenameDownload}";
+
+            return await AddDownloadAsync(filenameDownload, url, savePath);
+        }
+        public async Task<string> EasyFileUploadAsync(string filenameUpload)
+        {
+            string url = $"http://{IP}:{PORT_CONST}/chat-upload";
+
+            return await AddUploadAsync(filenameUpload, url);
+        }
+        public async Task<string> EasyFileGetInfoAsync(string filenameUpload)
+        {
+            string url = $"http://{IP}:{PORT_CONST}/chat-fileinfo?file={filenameUpload}";
+
+            return await AddGetInfoAsync(filenameUpload, url);
         }
 
         public async Task<string> AddDownloadAsync(string filename, string url, string destinationPath, int progressStep = 1, CancellationToken ct = default)
@@ -281,7 +230,11 @@ namespace SoZvon.ServerAPIManager
 
             DownloadOperation operation = new(operationId, filename, url, destinationPath, progressStep, linkedCts.Token);
 
-            await operationChannel.Writer.WriteAsync(operation, linkedCts.Token);
+            try
+            {
+                await operationChannel.Writer.WriteAsync(operation, linkedCts.Token);
+            }
+            catch { return string.Empty; }
 
             return operationId;
         }
@@ -294,7 +247,12 @@ namespace SoZvon.ServerAPIManager
 
             var operation = new UploadOperation(operationId, filename, url, progressStep, linkedCts.Token);
 
-            await operationChannel.Writer.WriteAsync(operation, linkedCts.Token);
+            try
+            {
+                await operationChannel.Writer.WriteAsync(operation, linkedCts.Token);
+            }
+            catch { return string.Empty; }
+
             return operationId;
         }
         public async Task<string> AddGetInfoAsync(string filename, string url, CancellationToken ct = default)
@@ -306,54 +264,23 @@ namespace SoZvon.ServerAPIManager
 
             var operation = new GetFileInfoOperation(operationId, filename, url, linkedCts.Token);
 
-            await operationChannel.Writer.WriteAsync(operation, linkedCts.Token);
+            try
+            {
+                await operationChannel.Writer.WriteAsync(operation, linkedCts.Token);
+            }
+            catch { return string.Empty; }
+
             return operationId;
         }
 
-        async Task ProcessDownloadAsync(DownloadOperation operation)
-        {
-            var (success, error, stream) = await DownloadFileAsync(operation);
-
-            if (!success)
-                throw new Exception(error);
-
-            Directory.CreateDirectory(My_FileInfo.sozvon_papka);
-
-            using var fileStream = File.Create(operation.DestinationPath);
-
-            if (stream is null) 
-                throw new Exception("stream is null");
-
-            await stream.CopyToAsync(fileStream, operation.Cts);
-        }
-        async Task ProcessUploadAsync(UploadOperation operation)
-        {
-            var (success, error) = await UploadFileAsync(operation);
-
-            if (!success)
-            {
-                User.OnInterfacesAction(ActionToIUser.OnUploadErrorHandler, new() {
-                    ["fileName"] = operation.Filename,
-                    ["text"] = error ?? "Error Upload"
-                });
-            }
-        }
-        async Task ProcessGetInfoAsync(GetFileInfoOperation operation)
-        {
-            var (success, error) = await GetFileInfoAsync(operation);
-
-            if (!success)
-                throw new Exception(error);
-        }
-
-        async Task<(bool success, string? error, Stream? fileStream)> DownloadFileAsync(DownloadOperation operation)
+        async Task<(bool success, string error)> DownloadFileAsync(DownloadOperation operation)
         {
             try
             {
                 operation.Cts.ThrowIfCancellationRequested();
 
                 if (string.IsNullOrEmpty(LoginGuidMessage)) 
-                    return (false, "Authorization token not set", null);
+                    return (false, "Authorization token not set");
 
                 var request = new HttpRequestMessage(HttpMethod.Get, operation.Url);
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", LoginGuidMessage);
@@ -364,9 +291,9 @@ namespace SoZvon.ServerAPIManager
                 {
                     return response.StatusCode switch
                     {
-                        HttpStatusCode.Unauthorized => (false, "Invalid token: " + LoginGuidMessage, null),
-                        HttpStatusCode.NotFound => (false, "Файл не найден", null),
-                        _ => (false, await response.Content.ReadAsStringAsync(operation.Cts), null)
+                        HttpStatusCode.Unauthorized => (false, "Invalid token: " + LoginGuidMessage),
+                        HttpStatusCode.NotFound => (false, "Файл не найден"),
+                        _ => (false, await response.Content.ReadAsStringAsync(operation.Cts))
                     };
                 }
 
@@ -377,7 +304,6 @@ namespace SoZvon.ServerAPIManager
                 var buffer = new byte[8192];
                 long receivedBytes = 0;
                 int lastReportedProgress = -1;
-                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var lastUpdateTime = DateTime.MinValue;
 
                 while (true)
@@ -398,39 +324,39 @@ namespace SoZvon.ServerAPIManager
                         // Обновляем прогресс только если:
                         // 1. Процент изменился
                         // 2. И прошло >100мс с последнего обновления (для производительности)
-                        if (roundedProgress > lastReportedProgress && (DateTime.Now - lastUpdateTime).TotalMilliseconds > 100)
+                        if (roundedProgress > lastReportedProgress && (DateTime.UtcNow - lastUpdateTime).TotalMilliseconds > 100)
                         {
                             lastReportedProgress = roundedProgress;
-                            lastUpdateTime = DateTime.Now;
+                            lastUpdateTime = DateTime.UtcNow;
 
-                            User.OnInterfacesAction(ActionToIUser.OnProgressHandler, new() {
-                                ["fileName"] = operation.Filename,
-                                ["percent"] = percentage,
-                                ["fileSize"] = totalBytes
-                            });
+                            OnProgressFileHandler(operation.Filename, (short)percentage, totalBytes);
                         }
                     }
                 }
 
-                User.OnInterfacesAction(ActionToIUser.OnProgressHandler, new() {
-                    ["fileName"] = operation.Filename,
-                    ["percent"] = 100,
-                    ["fileSize"] = totalBytes
-                });
+                // Гарантируем 100% по завершении
+                OnProgressFileHandler(operation.Filename, 100, totalBytes);
 
                 memoryStream.Position = 0;
-                return (true, null, memoryStream);
+
+                Directory.CreateDirectory(My_FileInfo.sozvon_papka);
+
+                using var fileStream = File.Create(operation.DestinationPath);
+
+                await memoryStream.CopyToAsync(fileStream, operation.Cts);
+
+                return (true, string.Empty);
             }
-            catch (OperationCanceledException ex) 
+            catch (OperationCanceledException)
             {
-                return (false, ex.Message, null);
+                return (false, "Загрузка отменена");
             }
             catch (Exception ex) 
             {
-                return (false, ex.Message, null);
+                return (false, ex.Message);
             }
         }
-        async Task<(bool success, string? error)> UploadFileAsync(UploadOperation operation)
+        async Task<(bool success, string error)> UploadFileAsync(UploadOperation operation)
         {
             try
             {
@@ -446,7 +372,6 @@ namespace SoZvon.ServerAPIManager
                 DateTime lastUpdateTime = DateTime.MinValue;
                 My_Timer timer = new(3);
 
-                using var httpClient = new HttpClient();
                 httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", LoginGuidMessage);
 
                 // Используем FileStream вместо чтения всего файла в память
@@ -456,7 +381,7 @@ namespace SoZvon.ServerAPIManager
                     if (totalBytes <= 0) 
                         return;
 
-                    var currentTime = DateTime.Now;
+                    var currentTime = DateTime.UtcNow;
 
                     if ((currentTime - lastUpdateTime).TotalMilliseconds < 100) 
                         return;
@@ -479,11 +404,7 @@ namespace SoZvon.ServerAPIManager
                     lastReportedProgress = roundedProgress;
                     lastUpdateTime = currentTime;
 
-                    User.OnInterfacesAction(ActionToIUser.OnProgressHandler, new() {
-                        ["fileName"] = operation.Filename,
-                        ["percent"] = percentage,
-                        ["fileSize"] = totalBytes
-                    });
+                    OnProgressFileHandler(operation.Filename, (short)percentage, totalBytes);
                 });
                 var formData = new MultipartFormDataContent
                 {
@@ -492,43 +413,41 @@ namespace SoZvon.ServerAPIManager
 
                 timer.Start();
 
-                NotificationOccured(TypeNotification.UploadingFile, new Dictionary<string, object>() { 
-                    [ "name_file"] = fileInfo.Name,
-                    [ "percentage"] = (short)0,
-                });
-
                 var response = await httpClient.PostAsync(operation.Url, formData, operation.Cts);
 
                 // Гарантируем 100% по завершении
-                User.OnInterfacesAction(ActionToIUser.OnProgressHandler, new() {
-                    ["fileName"] = operation.Filename,
-                    ["percent"] = 100,
-                    ["fileSize"] = totalBytes
-                });
+                OnProgressFileHandler(operation.Filename, 100, totalBytes);
 
                 if (!response.IsSuccessStatusCode)
                 {
                     return response.StatusCode switch
                     {
                         HttpStatusCode.Unauthorized => (false, "Invalid token"),
-                        _ => (false, $"Server error: {await response.Content.ReadAsStringAsync()}")
+                        _ => (false, $"Server error: {await response.Content.ReadAsStringAsync(operation.Cts)}")
                     };
                 }
 
-                var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+                var result = await response.Content.ReadFromJsonAsync<UploadResult>(operation.Cts);
 
-                NotificationOccured(TypeNotification.EndUploadingFile, new Dictionary<string, object>() {
+                if (result is null)
+                    return (false, "UploadResult is null");
+
+                NotificationOccured(TypeNotification.EndUploadingFile, new() {
                     ["name_file"] = fileInfo.Name
                 });
 
-                return result?.status == "ok" ? (true, null) : (false, "Upload failed: invalid server response");
+                return result.status == "ok" ? (true, string.Empty) : (false, "Upload failed: invalid server response");
+            }
+            catch (OperationCanceledException)
+            {
+                return (false, "Загрузка отменена");
             }
             catch (Exception ex)
             {
-                return (false, $"Upload failed: {ex.Message}");
+                return (false, ex.Message);
             }
         }
-        async Task<(bool success, string? error)> GetFileInfoAsync(GetFileInfoOperation operation)
+        async Task<(bool success, string error)> GetFileInfoAsync(GetFileInfoOperation operation)
         {
             try
             {
@@ -552,18 +471,21 @@ namespace SoZvon.ServerAPIManager
                     };
                 }
 
-                GetFileInfoResult result = await response.Content.ReadFromJsonAsync<GetFileInfoResult>() ?? throw new My_Exception("GetFileInfoResult is null");
+                var result = await response.Content.ReadFromJsonAsync<GetFileInfoResult>(operation.Cts);
+
+                if (result is null)
+                    return (false, "GetFileInfoResult is null");
 
                 User.OnInterfacesAction(ActionToIUser.OnFileInfoHandler, new() {
                     ["fileName"] = operation.Filename,
                     ["fileSize"] = result.size
                 });
 
-                return (true, null);
+                return (true, string.Empty);
             }
-            catch (OperationCanceledException ex)
+            catch (OperationCanceledException)
             {
-                return (false, ex.Message);
+                return (false, "Получение инфы о файле отменено");
             }
             catch (Exception ex)
             {
@@ -571,13 +493,21 @@ namespace SoZvon.ServerAPIManager
             }
         }
 
-
         public void SetIP(string ip) => IP = ip;
-        
         public void UpdateLoginGuid(Guid guid) => LoginGuidMessage = guid.ToString();
 
-        public void NotificationOccured(TypeNotification type, Dictionary<string, object> dict) => User.OnInterfacesAction(ActionToIUser.ServerNotifyOccured, new () { ["notification"] = new NotificationServer(type, dict) });
-        public void ErrorMessageOccured(string title, string text) => User.OnInterfacesAction(ActionToIUser.MessageErrorOccurred, new() { ["title"] = title, ["text"] = text });
+        public void NotificationOccured(TypeNotification type, Dictionary<string, object> dict) => User.OnInterfacesAction(ActionToIUser.ServerNotifyOccured, new () {
+            ["notification"] = new NotificationServer(type, dict)
+        });
+        public void OnProgressFileHandler(string filename, int percent, long fileSize) => User.OnInterfacesAction(ActionToIUser.OnProgressHandler, new() {
+            ["fileName"] = filename,
+            ["percent"] = percent,
+            ["fileSize"] = fileSize
+        });
+        public void ErrorMessageOccured(string title, string text) => User.OnInterfacesAction(ActionToIUser.MessageErrorOccurred, new() {
+            ["title"] = title,
+            ["text"] = text
+        });
 
         public bool CancelOperation(string operationId)
         {
@@ -600,10 +530,11 @@ namespace SoZvon.ServerAPIManager
         }
         public void Dispose()
         {
+            globalCts.Cancel();
+            globalCts.Dispose();
             operationChannel.Writer.Complete();
             httpClient.Dispose();
             semaphore.Dispose();
-            globalCts.Dispose();
         }
     }
 }

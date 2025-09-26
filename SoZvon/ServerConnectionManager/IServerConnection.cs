@@ -7,6 +7,6 @@ namespace SoZvon.ServerConnectionManager
         bool IsConnected { get; }
 
         void OnIUserAction(ActionFromIUser action_IUser, Dictionary<string, object> dict);
-        void New_ConnectionAttempt(int timeout_millisecond = 2000, Action? action = null);
+        Task New_ConnectionAttempt(int timeout_millisecond = 2000, Action? action = null);
     }
 }

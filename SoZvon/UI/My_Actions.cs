@@ -208,7 +208,7 @@ namespace SoZvon.UI
                 UserAddToPanel(user);
 
             // Добавление пользователей в лист в голосовом чате
-            var users_with_voice = from user in users_on_room where user.InVoiceChat == true select user;
+            var users_with_voice = from user in users_on_room where user.InVoiceChat select user;
 
             // Добавление пользователей (Кто в ВойсЧате)
             foreach (Room_User user in users_with_voice)
@@ -873,7 +873,6 @@ namespace SoZvon.UI
                 mainWindow.mainFrame_ref.Navigate(mainWindow.login_page);
                 mainWindow.mainFrame_ref.Visibility = Visibility.Visible;
             }
-            else return;
         }
 
         public void Navigate_Panels_To(Panel_Type page_to_set)
@@ -891,7 +890,7 @@ namespace SoZvon.UI
                     right_page = mainWindow.settings_page;
                     break;
                 default:
-                    throw new Exception("not supported page (Navigate_LeftPanel_To)");
+                    throw new InvalidOperationException("not supported page (Navigate_LeftPanel_To)");
             }
 
             mainWindow.leftPanel_ref.Navigate(left_page);

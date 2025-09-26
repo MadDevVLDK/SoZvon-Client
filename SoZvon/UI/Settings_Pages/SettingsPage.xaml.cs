@@ -27,9 +27,9 @@ namespace SoZvon.UI.Room_Pages
 
         public void UpdateUI(string id) => settingsUIManager.UpdateUIs();
         public void UpdateUIs() => settingsUIManager.UpdateUIs();
-        public void MakeSettingsUI(List<SettingsLogicManager.SettingsLogic.ISetting> settingsUI)
+        public void MakeSettingsUI(List<SettingsLogicManager.SettingsLogic.ISetting> settingUIs)
         {
-            var listUIs = settingsUIManager.MakeUIFromISetting(settingsUI);
+            var listUIs = settingsUIManager.MakeUIFromISetting(settingUIs);
             settingsUIManager.InitializeUI(SettingsPanel, listUIs);
         }
         public void OnHotkeyPressed(string Id, bool UseFormCapture)

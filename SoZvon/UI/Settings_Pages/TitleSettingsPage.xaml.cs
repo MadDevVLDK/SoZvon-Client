@@ -4,7 +4,7 @@ namespace SoZvon.UI.Room_Pages
 {
     public partial class TitleSettingsPage : Page
     {
-        IMainWindow mainWindow;
+        IMainWindow mainWindow = null!;
          
         // Стартовое состояние страницы
         public void StartProperties(IMainWindow mainWindow_)

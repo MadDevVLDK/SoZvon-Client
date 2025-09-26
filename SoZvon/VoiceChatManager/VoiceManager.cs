@@ -463,7 +463,6 @@ namespace SoZvon.VoiceChatManager
                 if (outputDevice is not null)
                 {
                     outputDevice?.Stop();
-                    outputDevice?.Dispose();
                     outputDevice = null;
                 }                
 

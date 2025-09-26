@@ -27,22 +27,10 @@
         readonly Dictionary<string, Room> rooms = [];
         readonly ReaderWriterLockSlim roomsLock = new();
 
-        public List<Room> GetRooms()
-        {
-            roomsLock.EnterReadLock();
-            try
-            {
-                return [.. rooms.Values];
-            }
-            finally
-            {
-                roomsLock.ExitReadLock();
-            }
-        }
         public Room GetOrCreateRoom(string roomName, int numUsers, string creatorLogin, out bool isNewRoom)
         {
-            ArgumentException.ThrowIfNullOrEmpty(roomName, nameof(roomName));
-            ArgumentException.ThrowIfNullOrEmpty(creatorLogin, nameof(creatorLogin));
+            ArgumentException.ThrowIfNullOrEmpty(roomName);
+            ArgumentException.ThrowIfNullOrEmpty(creatorLogin);
 
             roomsLock.EnterWriteLock();
             try
@@ -69,52 +57,12 @@
         }
         public bool TryGetRoom(string roomName, out Room? room)
         {
-            ArgumentException.ThrowIfNullOrEmpty(roomName, nameof(roomName));
+            ArgumentException.ThrowIfNullOrEmpty(roomName);
 
             roomsLock.EnterReadLock();
             try
             {
                 return rooms.TryGetValue(roomName, out room);
-            }
-            finally
-            {
-                roomsLock.ExitReadLock();
-            }
-        }
-        public bool TryAddRoom(Room room)
-        {
-            roomsLock.EnterWriteLock();
-            try
-            {
-                return rooms.TryAdd(room.Name_Room, room);
-            }
-            finally
-            {
-                roomsLock.ExitWriteLock();
-            }
-        }
-        public bool RemoveRoom(string roomName)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(roomName, nameof(roomName));
-
-            roomsLock.EnterWriteLock();
-            try
-            {
-                return rooms.Remove(roomName);
-            }
-            finally
-            {
-                roomsLock.ExitWriteLock();
-            }
-        }
-        public bool HasRoom(string roomName)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(roomName, nameof(roomName));
-
-            roomsLock.EnterReadLock();
-            try
-            {
-                return rooms.ContainsKey(roomName);
             }
             finally
             {
@@ -135,33 +83,6 @@
         }
 
         // Дополнительные полезные методы
-        public int GetRoomsCount()
-        {
-            roomsLock.EnterReadLock();
-            try
-            {
-                return rooms.Count;
-            }
-            finally
-            {
-                roomsLock.ExitReadLock();
-            }
-        }
-        public void ForEachRoom(Action<Room> action)
-        {
-            roomsLock.EnterReadLock();
-            try
-            {
-                foreach (var room in rooms.Values)
-                {
-                    action(room);
-                }
-            }
-            finally
-            {
-                roomsLock.ExitReadLock();
-            }
-        }
         public bool GetUserFromRoom(string roomName, string login, out Room_User? user)
         {
             ArgumentNullException.ThrowIfNull(roomName);
@@ -184,7 +105,7 @@
         }
         public bool ExecuteWithRoom(string roomName, Action<Room> action)
         {
-            ArgumentException.ThrowIfNullOrEmpty(roomName, nameof(roomName));
+            ArgumentException.ThrowIfNullOrEmpty(roomName);
 
             roomsLock.EnterReadLock();
             try
@@ -287,8 +208,8 @@
 
         public Room(string roomName, int numUsers, string creatorLogin)
         {
-            ArgumentException.ThrowIfNullOrEmpty(roomName, nameof(roomName));
-            ArgumentNullException.ThrowIfNull(creatorLogin, nameof(creatorLogin));
+            ArgumentException.ThrowIfNullOrEmpty(roomName);
+            ArgumentNullException.ThrowIfNull(creatorLogin);
 
             Name_Room = roomName;
             Num_Users = numUsers;
@@ -297,7 +218,7 @@
 
         public void UpdateRoomInfo(int numUsers, string creatorLogin)
         {
-            ArgumentNullException.ThrowIfNull(creatorLogin, nameof(creatorLogin));
+            ArgumentNullException.ThrowIfNull(creatorLogin);
 
             Num_Users = numUsers;
             Login_Creator = creatorLogin;
@@ -317,7 +238,7 @@
         }
         public bool TryGetUser(string login, out Room_User? room_User)
         {
-            ArgumentNullException.ThrowIfNull(login, nameof(login));
+            ArgumentNullException.ThrowIfNull(login);
 
             roomLock.EnterReadLock();
             try
@@ -343,7 +264,7 @@
         }
         public bool RemoveUser(string login)
         {
-            ArgumentNullException.ThrowIfNull(login, nameof(login));
+            ArgumentNullException.ThrowIfNull(login);
 
             roomLock.EnterWriteLock();
             try
@@ -355,21 +276,9 @@
                 roomLock.ExitWriteLock();
             }
         }
-        public void ClearUsers()
-        {
-            roomLock.EnterWriteLock();
-            try
-            {
-                users.Clear();
-            }
-            finally
-            {
-                roomLock.ExitWriteLock();
-            }
-        }
         public bool HasUser(string login)
         {
-            ArgumentNullException.ThrowIfNull(login, nameof(login));
+            ArgumentNullException.ThrowIfNull(login);
 
             roomLock.EnterReadLock();
             try
@@ -408,8 +317,7 @@
                 roomLock.ExitWriteLock();
             }
         }
-
-        public bool ChangeUserInVoiceChat(string login, bool inVoiceChat, out Room_User? user)
+        public bool ChangeUserInVoiceChat(string login, bool inVoiceChat, out Room_User user)
         {
             ArgumentNullException.ThrowIfNull(login);
             ArgumentNullException.ThrowIfNull(inVoiceChat);
@@ -417,47 +325,22 @@
             roomLock.EnterWriteLock();
             try
             {
-                if (!users.TryGetValue(login, out Room_User? value))
+                if (!users.TryGetValue(login, out var temp_user))
                 {
-                    user = null;
+                    user = null!;
                     return false;
                 }
 
-                value.InVoiceChat = inVoiceChat;
-                user = value;
-                return true;
+                user = temp_user;
+
+                if (temp_user is not null)
+                    temp_user.InVoiceChat = inVoiceChat;                
+                
+                return user is not null;
             }
             finally
             {
                 roomLock.ExitWriteLock();
-            }
-        }
-
-        public void ForEachUser(Action<Room_User> action)
-        {
-            roomLock.EnterReadLock();
-            try
-            {
-                foreach (var user in users.Values)
-                {
-                    action(user);
-                }
-            }
-            finally
-            {
-                roomLock.ExitReadLock();
-            }
-        }
-        public int GetUsersCount()
-        {
-            roomLock.EnterReadLock();
-            try
-            {
-                return users.Count;
-            }
-            finally
-            {
-                roomLock.ExitReadLock();
             }
         }
 

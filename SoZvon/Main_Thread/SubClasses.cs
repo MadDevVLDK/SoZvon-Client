@@ -62,15 +62,14 @@
         OnGridTagsPeopleButton, // string grid_tags_people_name_pressed
         OnCloseErrorButton, // string tag_error
 
-        MakeConnectionServerWithAction, // int timeout_millisecond, Action action
-        ReloadConnectionServer,
+        ReloadConnectionServer, // int timeout_millisecond, Action action
 
         SetOperationId, // string id
         CancelOperation, //string operationID
 
-        GetInfoFile, //
-        UploadFile, //
-        DownloadFile, //
+        GetInfoFile, 
+        UploadFile, 
+        DownloadFile,
 
         OnProgressHandler,
         OnFileInfoHandler,
@@ -108,9 +107,9 @@
         UpdateIP, // string ip
         OnFocusTagTextblock, // bool GotFocus, string text
         OnSendingMessageTextBox, // string reciever, string text, My_FileInfo[] filesInfos
-        GetInfoFile, //
-        UploadFile, //
-        DownloadFile, //
+        GetInfoFile, 
+        UploadFile, 
+        DownloadFile, 
         SetOperationId, // string id
         CancelOperation, //string operationID
 

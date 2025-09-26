@@ -10,6 +10,7 @@ namespace SoZvon.UI
 {
     using SoZvon.SubClasses;
     using SubClasses;
+    using System.Threading;
     using System.Windows.Media.Animation;
     using System.Windows.Threading;
     using Action_IUser = Main_Thread.Action_IUser;
@@ -18,7 +19,7 @@ namespace SoZvon.UI
 
     public partial class MainWindow
     {
-        readonly Channel<Action_IUser> UserUI_Channel = Channel.CreateBounded<Action_IUser>(new BoundedChannelOptions(2000) { FullMode = BoundedChannelFullMode.Wait });
+        readonly Channel<Action_IUser> UserUI_Channel = Channel.CreateBounded<Action_IUser>(new BoundedChannelOptions(5000) { FullMode = BoundedChannelFullMode.Wait });
         readonly Dictionary<string, Color> users_colors = [];
         static readonly Color[] color_mass =
         [
@@ -38,19 +39,20 @@ namespace SoZvon.UI
             {
                 await foreach (Action_IUser action_IUser in UserUI_Channel.Reader.ReadAllAsync(cancellationToken))
                 {
-                    try
-                    {
-                        Action action = InterpretateActionIUser(action_IUser);
-                        MakeAction_Form(action);
-                    }
-                    catch (OperationCanceledException) { }
-                    catch (My_Exception ex)
-                    {
-                        MakeAction_Form(() => Make_ErrorMessage(ex.Title ?? action_IUser.Action.ToString(), ex.Message));
-                    }
+                    await MakeAction_Form(() => {
+                        try
+                        {
+                            InterpretateActionIUser(action_IUser).Invoke();
+                        }
+                        catch (OperationCanceledException) { }
+                        catch (My_Exception ex)
+                        {
+                            Make_ErrorMessage(ex.Title ?? action_IUser.Action.ToString(), ex.Message);
+                        }
+                    });
                 }
             }
-            catch (OperationCanceledException) { return; }
+            catch (OperationCanceledException) { }
         }
         Action InterpretateActionIUser(Action_IUser action_IUser)
         {
@@ -532,8 +534,7 @@ namespace SoZvon.UI
         public Main_Thread.IUser User { get; }
 
         readonly CancellationTokenSource cts = new();
-        readonly Channel<Action> form_current_actions_channel = Channel.CreateBounded<Action>(new BoundedChannelOptions(2000) { FullMode = BoundedChannelFullMode.Wait });
-
+        
         public StackPanel errorStackPanel_ref { get; private set; } = null!;
 
         public Frame mainFrame_ref { get; private set; } = null!;
@@ -566,7 +567,6 @@ namespace SoZvon.UI
             MinWidth = Min_RightPanel_Size + offset_margin_MainGrid_Room + Min_LeftPanel_Size;
             MinHeight = 660;
 
-            _ = Main_Thread(cts.Token);
             _ = Pressing_Button_Thread(cts.Token);
             _ = IUser_Channel_Thread(cts.Token);
         }
@@ -598,7 +598,7 @@ namespace SoZvon.UI
             notifyMsgManager = new(this);
             my_Actions = new(this);
             reesterWindows = new(@"Software\SoZvon");
-            buttonTimer = new(0.35);
+            buttonTimer = new(0.25);
             filesManager = new(this);
 
             login_page.StartProperties(this);
@@ -640,28 +640,18 @@ namespace SoZvon.UI
             login_page.Remember_Me_Sign.IsChecked = login_password_valid || ip_valid;
         }
 
-
-        // ГЛАВНЫЙ ПОТОК ПРИЛОЖЕНИЯ, КОТОРЫЙ ВСЕ ОБРАБАТЫВАЕТ ПО ОЧЕРЕДИ
-        async Task Main_Thread(CancellationToken cancellationToken)
+        public async Task MakeAction_Form(Action action)
         {
             try
             {
-                await foreach (Action action in form_current_actions_channel.Reader.ReadAllAsync(cancellationToken))
-                {
-                    try
-                    {
-                        Dispatcher.Invoke(System.Windows.Threading.DispatcherPriority.Render, action);
-                    }
-                    catch (OperationCanceledException) { }
-                    catch (Exception ex)
-                    {
-                        Make_ErrorMessage("Error_Main_Thread_My_User", ex.Message.ToString());
-                    }
-                }
+                await Dispatcher.InvokeAsync(action, DispatcherPriority.Normal, cts.Token);
             }
-            catch (OperationCanceledException) { return; }
+            catch (OperationCanceledException) { }
+            catch (Exception ex)
+            {
+                Make_ErrorMessage("Error_Main_Thread_My_User", ex.Message);
+            }
         }
-        public async void MakeAction_Form(Action action) => await form_current_actions_channel.Writer.WriteAsync(action);
         public async Task<T> MakeAction_Form_Dispatcher<T>(Func<T> action) => await Dispatcher.InvokeAsync(action);
 
 
@@ -699,15 +689,15 @@ namespace SoZvon.UI
 
 
         // Действия с файлами (загрузка, отправка и т.п.)
-        public void DownloadFile(string filename, string saveFolder) => User.OnInterfacesAction(ActionToIUser.DownloadFile, new() {
-            ["filename"] = filename,
-            ["saveFolder"] = saveFolder
+        public void DownloadFile(string filenameDownload, string savePath) => User.OnInterfacesAction(ActionToIUser.DownloadFile, new() {
+            ["filename"] = filenameDownload,
+            ["saveFolder"] = savePath
         });
-        public void UploadFile(string filename) => User.OnInterfacesAction(ActionToIUser.UploadFile, new() {
-            ["filename"] = filename
+        public void UploadFile(string filenameUpload) => User.OnInterfacesAction(ActionToIUser.UploadFile, new() {
+            ["filename"] = filenameUpload
         });
-        public void GetInfoFile(string filename) => User.OnInterfacesAction(ActionToIUser.GetInfoFile, new() {
-            ["filename"] = filename
+        public void GetInfoFile(string filenameUpload) => User.OnInterfacesAction(ActionToIUser.GetInfoFile, new() {
+            ["filename"] = filenameUpload
         });
         public void CanselOperation(string operationID) => User.OnInterfacesAction(ActionToIUser.CancelOperation, new() {
             ["operationID"] = operationID 
@@ -759,10 +749,10 @@ namespace SoZvon.UI
 
 
         // Уведомление Главный Потока о каких-либо действиях
-        public void OnTextBoxMessages(string reciever, string text, My_FileInfo[] filesInfos) => User.OnInterfacesAction(ActionToIUser.OnSendingMessageTextBox, new() {
-            ["reciever"] = reciever,
+        public void OnTextBoxMessages(string temp_reciever, string text, My_FileInfo[] file_pathes) => User.OnInterfacesAction(ActionToIUser.OnSendingMessageTextBox, new() {
+            ["reciever"] = temp_reciever,
             ["text"] = text,
-            ["filesInfos"] = filesInfos
+            ["filesInfos"] = file_pathes
         });
         public void MakeNotificationServer(TypeNotification typeNotification, Dictionary<string, object> dict) => User.OnInterfacesAction(ActionToIUser.ServerNotifyOccured, new() {
             ["notification"] = new NotificationServer(typeNotification, dict)
@@ -803,7 +793,7 @@ namespace SoZvon.UI
                     if (!isAnimating)
                     {
                         pendingTargetWidth = -1;
-                        MakeAction_Form(() => StartAnimation(new_width));
+                        _ = MakeAction_Form(() => StartAnimation(new_width));
                     }
                     else
                     {
@@ -875,7 +865,7 @@ namespace SoZvon.UI
                 {
                     var nextWidth = pendingTargetWidth;
                     pendingTargetWidth = -1;
-                    MakeAction_Form(() => StartAnimation(nextWidth));
+                    _ = MakeAction_Form(() => StartAnimation(nextWidth));
                 }
             }
         }
@@ -945,9 +935,8 @@ namespace SoZvon.UI
 
                     try
                     {
-                        MakeAction_Form(action);
+                        await MakeAction_Form(action);
                     }
-                    catch (OperationCanceledException) { }
                     catch (Exception ex)
                     {
                         Make_ErrorMessage("Error_Pressing_Button_Thread_UI", ex.Message.ToString());
@@ -956,7 +945,7 @@ namespace SoZvon.UI
                     buttonTimer.Reset();
                 }
             }
-            catch (OperationCanceledException) { return; }
+            catch (OperationCanceledException) { }
         }
 
         public async void AnyButton_UpMouse(object sender, MouseButtonEventArgs e)
@@ -1066,7 +1055,7 @@ namespace SoZvon.UI
 
             await pressing_button_channel.Writer.WriteAsync(action);
         }
-        public void AnyButton_DownMouse(object sender, MouseButtonEventArgs e)
+        public async void AnyButton_DownMouse(object sender, MouseButtonEventArgs e)
         {
             if (sender is not Grid button)
                 return;
@@ -1135,9 +1124,9 @@ namespace SoZvon.UI
                 }
             }
 
-            MakeAction_Form(action);
+            await MakeAction_Form(action);
         }
-        public void AnyButton_EnterLeaveMouse(object sender, MouseEventArgs e)
+        public async void AnyButton_EnterLeaveMouse(object sender, MouseEventArgs e)
         {
             if (sender is not Grid button) 
                 return;
@@ -1225,7 +1214,7 @@ namespace SoZvon.UI
                 my_Buttons.Fast_Button_Appearence_Change(button.Name, color_Type, tag);
             }
 
-            MakeAction_Form(action);
+            await MakeAction_Form(action);
         }
 
         public void On_Login_Button(string login, string password)
