@@ -321,7 +321,7 @@ namespace SoZvon.UI.Room_Pages
             await mainWindow.MakeAction_Form_Dispatcher(async () =>
             {
                 // 2. Создание UI-элементов в UI-потоке
-                var containers = new List<Grid>();
+                List<Grid> containers = [];
                 int maxToAdd = My_FileInfo.MaxFiles - Files_StackPanel.Children.Count;
 
                 foreach (var fileInfo in fileInfos.Take(maxToAdd))
@@ -386,7 +386,7 @@ namespace SoZvon.UI.Room_Pages
 
             if (file_info.Type is FileType.Image)
             {
-                var stream = file_info.GetStream() ?? throw new("WTF file_info.GetStream() is null");
+                var stream = file_info.GetStream() ?? throw new ArgumentException("file_info.GetStream() is null");
 
                 preview = new Image
                 {
@@ -473,29 +473,24 @@ namespace SoZvon.UI.Room_Pages
         }
 
         //Получение файлов с формы которые пользователь добавил в очередь на отправку с сообщением
-        public static My_FileInfo[] GetFilePathesFromStackPanel(StackPanel stackPanel)
+        static My_FileInfo[] GetFilePathesFromStackPanel(StackPanel stackPanel)
         {
             List<My_FileInfo> filePaths = [];
 
             foreach (var child in stackPanel.Children)
             {
-                if (child is Grid grid && grid.Tag is not null)
-                {
-                    if (grid.Tag is My_FileInfo fileInfo)
-                    {
-                        filePaths.Add(fileInfo);
-                    }
-                }
+                if (child is not Grid grid || grid.Tag is not My_FileInfo fileInfo)
+                    continue;
+
+                filePaths.Add(fileInfo);
             }
 
             return [.. filePaths];
         }
-
-
-        public async Task<BitmapImage> GetOptimizedImageAsync(FileStream fileStream, string filePath)
+        static async Task<BitmapImage> GetOptimizedImageAsync(FileStream fileStream, string filePath)
         {
             if (!File.Exists(filePath))
-                throw new Exception("пустота в fileInfo.Path");
+                throw new ArgumentException("пустота в fileInfo.Path");
 
             return await Task.Run(() =>
             {
@@ -512,8 +507,8 @@ namespace SoZvon.UI.Room_Pages
                 return bitmap;
             });
         }
-        static bool IsLargeImage(string filePath) => new FileInfo(filePath).Length > 1_000_000; // >1MB
 
+        static bool IsLargeImage(string filePath) => new FileInfo(filePath).Length > 1_000_000; // >1MB
         bool CanDropFiles()
         {
             if (!_fileLock.Wait(0)) return false;
@@ -527,15 +522,14 @@ namespace SoZvon.UI.Room_Pages
                 _fileLock.Release();
             }
         }
-        bool SetFilesLoading(bool value)
+        void SetFilesLoading(bool value)
         {
             if (!_fileLock.Wait(0)) 
-                return false;
+                return;
 
             try
             {
                 FilesLoading = value;
-                return true;
             }
             finally
             {

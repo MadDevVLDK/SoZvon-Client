@@ -515,7 +515,8 @@ namespace SoZvon.Main_Thread
         readonly CancellationTokenSource cts = new();
         readonly Channel<Action> all_actions_channel = Channel.CreateBounded<Action>(new BoundedChannelOptions(10000) { FullMode = BoundedChannelFullMode.Wait });
         readonly Channel<Message> recieved_raw_messages_channel = Channel.CreateBounded<Message>(new BoundedChannelOptions(2000) { FullMode = BoundedChannelFullMode.Wait });
-        readonly Channel<Action_Interfaces> recieved_files_operations_channel = Channel.CreateBounded<Action_Interfaces>(new BoundedChannelOptions(5000) { FullMode = BoundedChannelFullMode.Wait });
+        //readonly Channel<Action_Interfaces> recieved_files_operations_channel = Channel.CreateBounded<Action_Interfaces>(new BoundedChannelOptions(5000) { FullMode = BoundedChannelFullMode.Wait });
+        
         public My_User()
         {
             applicationUI = new UI.MainWindow(this);
@@ -540,7 +541,6 @@ namespace SoZvon.Main_Thread
             OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.OnStart, []);
             OnIUserAction(InterfaceToSend.ISettingsService, ActionFromIUser.OnStart, []);
         }
-
         void OnIUserAction(InterfaceToSend reciever, ActionFromIUser actionIUser, Dictionary<string, object> dict)
         {
             switch (reciever)
@@ -571,7 +571,7 @@ namespace SoZvon.Main_Thread
                         break;
                     }
                 default:
-                    throw new My_Exception("OnIUserAction", "InterfaceToSend is incorrect");
+                    throw new ArgumentException("InterfaceToSend is incorrect");
             }
         }
 
@@ -589,13 +589,13 @@ namespace SoZvon.Main_Thread
                     {
                         Make_ErrorMessage(ex.Title ?? "User_Error", ex.Message.ToString());
                     }
+                    catch (ArgumentException ex)
+                    {
+                        Make_ErrorMessage("Wrong args (MainThreadIUser)", $"Error: {ex.Message}");
+                    }
                 }
             }
-            catch (OperationCanceledException) { }
-            catch (ArgumentException ex)
-            {
-                Make_ErrorMessage("Wrong args (MainThreadIUser)", $"Fatal Error: {ex.Message}");
-            }
+            catch (OperationCanceledException) { }            
             catch (Exception ex)
             {
                 Make_ErrorMessage("MainThreadIUser", $"Fatal Error: {ex.Message}");
@@ -621,7 +621,9 @@ namespace SoZvon.Main_Thread
         }
         async Task ReceiveRawMessage(Message message) => await recieved_raw_messages_channel.Writer.WriteAsync(message, cts.Token);
 
-        void SendMessage(Message msg) => OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.OnSendingMessage, new() { ["message"] = msg });
+        void SendMessage(Message msg) => OnIUserAction(InterfaceToSend.IServerConnection, ActionFromIUser.OnSendingMessage, new() {
+            ["message"] = msg
+        });
         void SendMessage(Guid guid, CommandText commandText, params object?[]? args) => SendMessage(Message.MakeMessage(guid.ToByteArray(), new(commandText), args));
         void ReadMessage(Message message)
         {
@@ -897,11 +899,8 @@ namespace SoZvon.Main_Thread
                         if (IsRoomNameNull(out var roomName))
                             throw new ArgumentException("Room_Name is null");
 
-                        if (!roomManager.GetUserFromRoom(roomName, login, out Room_User? user))
+                        if (!roomManager.GetUserFromRoom(roomName, login, out Room_User user))
                             throw new ArgumentException("GetUserFromRoom is false");
-
-                        if (user is null)
-                            throw new ArgumentException("user is null");
 
                         OnIUserAction(InterfaceToSend.IApplicationUI, ActionFromIUser.OnUserTexting, new() {
                             ["user"] = user
@@ -1121,23 +1120,22 @@ namespace SoZvon.Main_Thread
             });
         }
 
-
-        async Task Files_Operations_Thread(CancellationToken cancellationToken)
-        {
-            try
-            {
-                await foreach (var action in recieved_files_operations_channel.Reader.ReadAllAsync(cancellationToken))
-                {
+        //async Task Files_Operations_Thread(CancellationToken cancellationToken)
+        //{
+        //    try
+        //    {
+        //        await foreach (var action in recieved_files_operations_channel.Reader.ReadAllAsync(cancellationToken))
+        //        {
                     
                     
-                }
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                Make_ErrorMessage("ReadMessagesIUser", $"Fatal Error: {ex.Message}");
-            }
-        }
+        //        }
+        //    }
+        //    catch (OperationCanceledException) { }
+        //    catch (Exception ex)
+        //    {
+        //        Make_ErrorMessage("ReadMessagesIUser", $"Fatal Error: {ex.Message}");
+        //    }
+        //}
         //Action InterpretateActionInterfaces(Action_Interfaces action_IUser)
         //{
         //    Action action;
@@ -1154,8 +1152,7 @@ namespace SoZvon.Main_Thread
 
         //    return action;
         //}
-        public async void OnFilesOperationsUI(ActionToIUser action_IUser, Dictionary<string, object> dict) => await recieved_files_operations_channel.Writer.WriteAsync(new(action_IUser, dict));
-
+        //public async void OnFilesOperationsUI(ActionToIUser action_IUser, Dictionary<string, object> dict) => await recieved_files_operations_channel.Writer.WriteAsync(new(action_IUser, dict));
 
         static string? GetFilesPathes(My_FileInfo[] file_infos)
         {

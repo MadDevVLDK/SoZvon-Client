@@ -82,14 +82,13 @@ namespace SoZvon.UI
     }
 
     // Класс для управления UI-действиями в приложении
-    public class My_Actions(IMainWindow mainWindow_)
+    public class My_Actions(IMainWindow mainWindow)
     {
         const string format_time = "HH:mm";
-
         DateTime lastmsg_date = DateTime.MinValue; // Хранит дату последнего сообщения (отображенного на форме в данный момент)
-        readonly IMainWindow mainWindow = mainWindow_; 
-        readonly RoomPage room_page = mainWindow_.room_page; // Страница комнаты
-        readonly RoomPanelPage room_panel_page = mainWindow_.room_panel_page; // Панель комнат
+
+        readonly RoomPage room_page = mainWindow.room_page; // Страница комнаты
+        readonly RoomPanelPage room_panel_page = mainWindow.room_panel_page; // Панель комнат
 
         readonly SelfSortingStringList rooms_names = [];
         readonly SelfSortingStringList users_logins = [];
@@ -206,21 +205,6 @@ namespace SoZvon.UI
             // Добавление пользователей (кто в комнате есть)
             foreach (Room_User user in users_on_room)
                 UserAddToPanel(user);
-
-            // Добавление пользователей в лист в голосовом чате
-            var users_with_voice = from user in users_on_room where user.InVoiceChat select user;
-
-            // Добавление пользователей (Кто в ВойсЧате)
-            foreach (Room_User user in users_with_voice)
-                UserVoiceChatAddToPanel(user);
-        }
-        public void UsersDeleteOnPanel()
-        {
-            users_logins.Clear();
-            users_logins_voice_chat.Clear();
-            room_page.All_PeopleRoom.Children.Clear();
-            room_page.All_PeopleVoiceChat.Children.Clear();
-            room_page.Panel_Users_Tags.Children.Clear();
         }
         public void UserAddToPanel(Room_User room_user)
         {
@@ -259,7 +243,6 @@ namespace SoZvon.UI
                 Text = room_user.Name,
                 FontFamily = new FontFamily("Comic Sans MS")
             };
-
             TextBlock textblock_texting = new()
             {
                 Tag = "Texting_Texblock",
@@ -292,6 +275,24 @@ namespace SoZvon.UI
                 room_page.All_PeopleRoom.Children.RemoveAt(users_logins.BinarySearch(id));
                 users_logins.Remove(id);
             }
+        }
+        public void UsersDeleteOnPanel()
+        {
+            users_logins.Clear();
+            users_logins_voice_chat.Clear();
+            room_page.All_PeopleRoom.Children.Clear();
+            room_page.All_PeopleVoiceChat.Children.Clear();
+            room_page.Panel_Users_Tags.Children.Clear();
+        }
+
+        public void UsersVoiceChatAddToPanel(List<Room_User> users_on_room)
+        {
+            // Добавление пользователей в лист в голосовом чате
+            var users_with_voice = from user in users_on_room where user.InVoiceChat select user;
+
+            // Добавление пользователей (Кто в ВойсЧате)
+            foreach (Room_User user in users_with_voice)
+                UserVoiceChatAddToPanel(user);
         }
         public void UserVoiceChatAddToPanel(Room_User room_user)
         {
@@ -368,11 +369,15 @@ namespace SoZvon.UI
             if (room_page.Textbox_PrivateMsg.IsFocused || room_page.Grid_Users_Tags.IsFocused) 
                 room_page.ChangeVisibility_Grid_PeopleTags(Visibility.Visible);
 
+            int visible_tags = 0;
+
             foreach (Room_User user in users_on_room)
             {
                 // Фильтрация пользователей по введенному тексту
                 if (text is not null && !user.Login.TrimEnd().TrimStart().Contains(text, StringComparison.CurrentCultureIgnoreCase)) 
                     continue;
+
+                visible_tags++;
 
                 Grid new_grid = new() 
                 { 
@@ -454,40 +459,78 @@ namespace SoZvon.UI
             }
 
             // Если логинов нет никаких
-            if(room_page.Panel_Users_Tags.Children.Count == 0)
+            Grid grid = new()
             {
-                Grid new_grid = new() 
-                { 
-                    Margin = new Thickness(0, 5, 0, 0),
-                    Height = 40,
-                    Focusable = false
-                };
+                Tag = "NoUserTags",
+                Margin = new Thickness(0, 5, 0, 0),
+                Height = 40,
+                Focusable = false,
+                Visibility = visible_tags == 0 ? Visibility.Visible : Visibility.Collapsed
+            };
 
-                StackPanel stackpanel = new() 
-                { 
-                    Orientation = Orientation.Horizontal,
-                    HorizontalAlignment = HorizontalAlignment.Left,
-                    Margin = new Thickness(0, 2, 0, 2)
-                };
+            grid.Children.Add(new Rectangle
+            {
+                Tag = "Background",
+                Fill = new SolidColorBrush(Color.FromRgb(240, 240, 240)),
+                Stroke = new SolidColorBrush(Color.FromRgb(156, 156, 156)),
+                RadiusX = 11.5,
+                RadiusY = 11.5
+            });
 
-                stackpanel.Children.Add(new TextBlock 
+            StackPanel stack = new()
+            {
+                Orientation = Orientation.Horizontal,
+                HorizontalAlignment = HorizontalAlignment.Left,
+                Margin = new Thickness(0, 2, 0, 2)
+            };
+
+            stack.Children.Add(new TextBlock
+            {
+                Text = "Нет логинов, удовлетворяющих запросу",
+                IsEnabled = false,
+                Height = 24,
+                FontSize = 15,
+                TextAlignment = TextAlignment.Left,
+                Margin = new Thickness(10, 0, 10, 0),
+                FontFamily = new FontFamily("Comic Sans MS"),
+                Foreground = new SolidColorBrush(Colors.Black),
+                Background = new SolidColorBrush(Colors.Transparent)
+            });
+
+            grid.Children.Add(stack);
+
+            room_page.Panel_Users_Tags.Children.Add(grid);
+        }
+        public void UpdatePeopleTagsOnPanel(string text)
+        {
+            if (room_page.Textbox_PrivateMsg.IsFocused || room_page.Grid_Users_Tags.IsFocused)
+                room_page.ChangeVisibility_Grid_PeopleTags(Visibility.Visible);
+
+            int visible_tags = 0;
+
+            foreach (Grid userTag_grid in room_page.Panel_Users_Tags.Children)
+            {
+                if (userTag_grid.Tag is not string _tag || !_tag.StartsWith("Tags_People"))
+                    continue;
+
+                if (userTag_grid.FindElementByTag<TextBlock>("Text") is not TextBlock userTag_textblock)
+                    continue;
+
+                if (userTag_textblock.Tag is not string tag)
+                    continue;
+
+                if (tag.Contains(text!, StringComparison.CurrentCultureIgnoreCase))
                 {
-                    Text = "Нет логинов, удовлетворяющих запросу",
-                    IsEnabled = false,
-                    Height = 24,
-                    FontSize = 15,
-                    TextAlignment = TextAlignment.Left,
-                    Margin = new Thickness(10, 0, 10, 0),
-                    FontFamily = new FontFamily("Comic Sans MS"),
-                    Foreground = new SolidColorBrush(Colors.Black),
-                    Background = new SolidColorBrush(Colors.Transparent)
-                });
-
-                new_grid.Children.Add(new Rectangle { Tag = "Background", Fill = new SolidColorBrush(Color.FromRgb(240, 240, 240)), Stroke = new SolidColorBrush(Color.FromRgb(156, 156, 156)), RadiusX = 11.5, RadiusY = 11.5 });
-                new_grid.Children.Add(stackpanel);
-
-                room_page.Panel_Users_Tags.Children.Add(new_grid);
+                    userTag_grid.Visibility = Visibility.Visible;
+                    visible_tags++;
+                }
+                else userTag_grid.Visibility = Visibility.Collapsed;
             }
+
+            if (room_page.Panel_Users_Tags.FindElementByTag<Grid>("NoUserTags") is not Grid nouserTag_grid)
+                return;
+
+            nouserTag_grid.Visibility = visible_tags == 0 ? Visibility.Visible : Visibility.Collapsed;
         }
         public void DeletePeopleTagsOnPanel() => room_page.Panel_Users_Tags.Children.Clear();
 
@@ -861,68 +904,54 @@ namespace SoZvon.UI
             if (page is Page_Type.None)
             {
                 mainWindow.mainFrame_ref.Navigate(null);
-                mainWindow.mainFrame_ref.Visibility = Visibility.Hidden;
             }
             else if (page is Page_Type.RegisterPage)
             {
                 mainWindow.mainFrame_ref.Navigate(mainWindow.register_page);
-                mainWindow.mainFrame_ref.Visibility = Visibility.Visible;
             }
             else if (page is Page_Type.LogInPage)
             {
                 mainWindow.mainFrame_ref.Navigate(mainWindow.login_page);
-                mainWindow.mainFrame_ref.Visibility = Visibility.Visible;
             }
-        }
+            else throw new ArgumentException("not supported page (Navigate_MainFrame_To)");
 
+            mainWindow.mainFrame_ref.Visibility = page is Page_Type.None ? Visibility.Collapsed : Visibility.Visible;
+        }
         public void Navigate_Panels_To(Panel_Type page_to_set)
         {
-            Page left_page, right_page;
-
-            switch (page_to_set)
+            var (leftPage, rightPage) = page_to_set switch
             {
-                case Panel_Type.RoomPanels:
-                    left_page = mainWindow.room_panel_page;
-                    right_page = mainWindow.room_page;
-                    break;
-                case Panel_Type.SettingsPanels:
-                    left_page = mainWindow.titleSettings_page;
-                    right_page = mainWindow.settings_page;
-                    break;
-                default:
-                    throw new InvalidOperationException("not supported page (Navigate_LeftPanel_To)");
-            }
+                Panel_Type.RoomPanels => (Page_Type.RoomPanelPage, Page_Type.RoomPage),
+                Panel_Type.SettingsPanels => (Page_Type.TitleSettingsPage, Page_Type.SettingsPage),
+                _ => throw new ArgumentException("not supported page (Navigate_LeftPanel_To)")
+            };
 
-            mainWindow.leftPanel_ref.Navigate(left_page);
-            mainWindow.rightPanel_ref.Navigate(right_page);
+            Navigate_LeftPanel_To(leftPage);
+            Navigate_RightPanel_To(rightPage);
         }
-
-        // Открывает форму с панелью комнат или не показывает вовсе форму
         public void Navigate_LeftPanel_To(Page_Type page_to_set)
         {
             Page? page = page_to_set switch
             {
-                Page_Type.None => null,
                 Page_Type.RoomPanelPage => mainWindow.room_panel_page,
                 Page_Type.TitleSettingsPage => mainWindow.titleSettings_page,
                 _ => throw new Exception("not supported page (Navigate_LeftPanel_To)")
             };
 
             mainWindow.leftPanel_ref.Navigate(page);
+            mainWindow.leftPanel_ref.Visibility = Visibility.Visible;
         }
-
-        // Открывает форму с панелью сообщений и пользователями в комнате и в Войс чате или не показывает вовсе форму
         public void Navigate_RightPanel_To(Page_Type page_to_set)
         {
             Page? page = page_to_set switch
             {
-                Page_Type.None => null,
                 Page_Type.RoomPage => mainWindow.room_page,
                 Page_Type.SettingsPage => mainWindow.settings_page,
                 _ => throw new Exception("not supported page (Navigate_RightPanel_To)")
             };
 
             mainWindow.rightPanel_ref.Navigate(page);
+            mainWindow.rightPanel_ref.Visibility = Visibility.Visible;
         }
 
         public void OnExitRoom()

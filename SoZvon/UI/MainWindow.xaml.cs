@@ -276,6 +276,7 @@ namespace SoZvon.UI
                         action = () =>
                         {
                             my_Actions.UsersAddToPanel(users);
+                            my_Actions.UsersVoiceChatAddToPanel(users);
                             ShowPeopleTagsOnPanel(users, "");
                         };
                         break;
@@ -707,7 +708,7 @@ namespace SoZvon.UI
 
         // НАДО УБРАТЬ КОЛХОЗ с постоянным отображением всех пользователей на гриде тэгов
         public void ShowPeopleTagsOnPanel(List<Room_User> room_Users, string text) => my_Actions.ShowPeopleTagsOnPanel(room_Users, text);
-
+        public void UpdatePeopleTagsOnPanel(string text) => my_Actions.UpdatePeopleTagsOnPanel(text);
 
         // Действия для отображения инфы на экране
         public void Change_Log_Text(string text, Color color)
@@ -761,9 +762,10 @@ namespace SoZvon.UI
             ["GotFocus"] = GotFocus,
             ["text"] = text
         });
-        public void TextBoxTextChange(string text) => User.OnInterfacesAction(ActionToIUser.TagsTextChange, new() {
-            ["text"] = text}
-        );
+        //public void TextBoxTextChange(string text) => User.OnInterfacesAction(ActionToIUser.TagsTextChange, new() {
+        //    ["text"] = text}
+        //);
+        public void TextBoxTextChange(string text) => my_Actions.UpdatePeopleTagsOnPanel(text);
         public void ChangeIP(string ip) => User.OnInterfacesAction(ActionToIUser.UpdateIP, new() {
             ["ip"] = ip 
         });

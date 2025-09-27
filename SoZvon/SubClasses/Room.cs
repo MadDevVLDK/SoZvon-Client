@@ -83,7 +83,7 @@
         }
 
         // Дополнительные полезные методы
-        public bool GetUserFromRoom(string roomName, string login, out Room_User? user)
+        public bool GetUserFromRoom(string roomName, string login, out Room_User user)
         {
             ArgumentNullException.ThrowIfNull(roomName);
 
@@ -92,10 +92,10 @@
             {
                 if (rooms.TryGetValue(roomName, out var room))
                 {
-                    return room.TryGetUser(login, out user);
+                    return room.TryGetUser(login, out user!) && user is not null;
                 }
 
-                user = null;
+                user = null!;
                 return false;
             }
             finally

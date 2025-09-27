@@ -39,10 +39,6 @@ namespace SoZvon.Main_Thread
                 }
             }
             catch (OperationCanceledException) { }
-            catch (ArgumentException ex)
-            {
-                Make_ErrorMessage("Wrong params (ButtonsFunc)", $"Fatal Error: {ex.Message}");
-            }
             catch (Exception ex)
             {
                 Make_ErrorMessage("ButtonsFunctionCaller", $"Fatal Error: {ex.Message}");
@@ -238,7 +234,7 @@ namespace SoZvon.Main_Thread
             if (IsLoginNull(out var login))
                 throw new UserException("Login is null");
 
-            if (!roomManager.GetUserFromRoom(roomName, login, out Room_User? user) || user is null)
+            if (!roomManager.GetUserFromRoom(roomName, login, out Room_User user))
                 throw new UserException("GetUserFromRoom is false");
 
             var action = ActionFromIUser.OnUserExitVoiceChat;
